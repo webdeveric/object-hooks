@@ -1,0 +1,40 @@
+{
+  "name": "@webdeveric/object-hooks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "",
+  "main": "dist/objectHooks.js",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint ./*.js ./src/ --ext .js --fix",
+    "build": "NODE_ENV=production rollup -c",
+    "dev": "NODE_ENV=development rollup -c -w",
+    "test": "NODE_ENV=test jest"
+  },
+  "author": {
+    "email": "eric@webdeveric.com",
+    "name": "Eric King",
+    "url": "http://webdeveric.com/"
+  },
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.7.7",
+    "@babel/plugin-proposal-class-properties": "^7.7.4",
+    "@babel/plugin-proposal-object-rest-spread": "^7.7.7",
+    "@babel/preset-env": "^7.7.7",
+    "@rollup/plugin-node-resolve": "^6.0.0",
+    "core-js": "^3.6.0",
+    "eslint-config-webdeveric": "^0.4.0",
+    "jest": "^24.9.0",
+    "rollup": "^1.27.13",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-eslint": "^7.0.0",
+    "rollup-plugin-filesize": "^6.2.1",
+    "rollup-plugin-terser": "^5.1.3"
+  }
+}
