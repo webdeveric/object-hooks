@@ -1,11 +1,21 @@
-export function capitalize(word) {
-  const w = `${word}`;
+export function ucfirst(text) {
+  const w = String(text);
 
-  return `${w.substr(0, 1).toUpperCase()}${w.substr(1)}`;
+  return w.substr(0, 1).toUpperCase() + w.substr(1);
+}
+
+export function lcfirst(text) {
+  const w = String(text);
+
+  return w.substr(0, 1).toLowerCase() + w.substr(1);
+}
+
+export function capitalize(text) {
+  return ucfirst( String(text).toLowerCase() );
 }
 
 export function toPascalCase(text, customWords) {
-  let pascal = text
+  let pascal = String(text)
     .replace(/[^a-zA-Z0-9]/g, ' ')
     .trim()
     .split(/(?=[A-Z])|(\d+)|\s+/)
@@ -39,27 +49,36 @@ export function toPascalCase(text, customWords) {
   return pascal.join('');
 }
 
-export function isFunction(func) {
-  return typeof func === 'function';
+export function isObject(arg) {
+  return arg !== null && typeof arg === 'object';
 }
 
-export function isAsyncFunction(func) {
-  return typeof func === 'function' && func.constructor.name === 'AsyncFunction';
+export function isFunction(arg) {
+  return typeof arg === 'function';
 }
 
-export function supportsCallback(obj, name) {
-  return obj && name in obj && isFunction(obj[name]);
+export function isAsyncFunction(arg) {
+  return typeof arg === 'function' && arg.constructor.name === 'AsyncFunction';
+}
+
+export function supportsCallback(obj, propName) {
+  return (
+    isObject(obj) &&
+    Object.prototype.hasOwnProperty.call(obj, propName) &&
+    isFunction(obj[ propName ])
+  );
 }
 
 export function callCustom(obj, prefix, prop, ...args) {
-  const customCallback = `${prefix}${toPascalCase(prop)}`;
+  const prefixCallback = lcfirst( toPascalCase(prefix) );
+  const customCallback = prefixCallback + toPascalCase(prop);
 
   if (supportsCallback(obj, customCallback)) {
-    return obj[customCallback](...args);
+    return obj[ customCallback ](...args);
   }
 
-  if (supportsCallback(obj, prefix)) {
-    return obj[prefix](...args);
+  if (supportsCallback(obj, prefixCallback)) {
+    return obj[ prefixCallback ](...args);
   }
 }
 
