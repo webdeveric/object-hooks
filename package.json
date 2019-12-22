@@ -9,7 +9,7 @@
     "src"
   ],
   "scripts": {
-    "lint": "eslint ./*.js ./src/ --ext .js --fix",
+    "lint": "eslint ./*.js ./src/ ./test/ --ext .js --fix",
     "build": "NODE_ENV=production rollup -c",
     "dev": "NODE_ENV=development rollup -c -w",
     "test": "NODE_ENV=test jest"
@@ -29,8 +29,9 @@
     "@rollup/plugin-node-resolve": "^6.0.0",
     "core-js": "^3.6.0",
     "eslint-config-webdeveric": "^0.4.0",
+    "eslint-plugin-jest": "^23.1.1",
     "jest": "^24.9.0",
-    "rollup": "^1.27.13",
+    "rollup": "^1.27.14",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-eslint": "^7.0.0",
