@@ -1,16 +1,83 @@
 import objectHooks from '../src/objectHooks';
 
-describe("objectHooks()", () => {
-  describe("Handles properties that are not functions", () => {
-    it("Returns the property", () => {
+describe('objectHooks()', () => {
+  describe('Handles properties that are not functions', () => {
+    it('Returns the property', () => {
       const demo = objectHooks({ name: 'Eric' });
 
       expect(demo.name).toBe('Eric');
     });
+
+    it('Calls a callback', () => {
+      const person = objectHooks(
+        {
+          name: 'Eric',
+          [Symbol.toPrimitive](hint) {
+            if ( hint === 'string') {
+              return this.name;
+            }
+
+            return 0;
+          },
+        },
+        {
+          name( prop ) {
+            return `WebDev${prop}`;
+          },
+          symbolSymbolToPrimitive: prop => (...args) => {
+            const value = prop(...args);
+
+            return `WebDev${value}`;
+          },
+        });
+
+      expect(`${person}`).toBe('WebDevEric');
+      expect(person.name).toBe('WebDevEric');
+    });
   });
 
-  describe("options", () => {
-    it("before()", () => {
+  describe('arguments', () => {
+    it('obj must be an object', () => {
+      expect(() => {
+        objectHooks({});
+        objectHooks(Object.create(null));
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks(null);
+      }).toThrow();
+    });
+
+    it('options must be an object', () => {
+      expect(() => {
+        objectHooks({}, {});
+        objectHooks({}, undefined);
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks({}, null);
+      }).toThrow();
+    });
+  });
+
+  describe('options', () => {
+    it('Callbacks have correct \'this\'', () => {
+      const person = {
+        name: 'Eric',
+      };
+
+      const demo = objectHooks(person, {
+        name(prop) {
+          expect(this === person).toBeTruthy();
+
+          return prop;
+        },
+      });
+
+      expect(demo.name).toBe('Eric');
+    });
+
+    it('before()', () => {
       const mock = jest.fn();
 
       const demo = objectHooks(
@@ -26,11 +93,11 @@ describe("objectHooks()", () => {
 
       demo.run();
 
-      expect(mock).toBeCalled();
+      expect(mock).toHaveBeenCalled();
     });
 
-    it("before() short circuit", () => {
-      const shortCircuit = "short circuit";
+    it('before() short circuit', async () => {
+      const shortCircuit = 'short circuit';
 
       const demo = objectHooks(
         {
@@ -39,7 +106,7 @@ describe("objectHooks()", () => {
             const name = await Promise.resolve('Eric');
 
             return name;
-          }
+          },
         },
         {
           before() {
@@ -51,10 +118,10 @@ describe("objectHooks()", () => {
       const results = demo.run();
 
       expect(results).toBe(shortCircuit);
-      expect(demo.getName()).resolves.toBe(shortCircuit);
+      await expect(demo.getName()).resolves.toBe(shortCircuit);
     });
 
-    it("after()", () => {
+    it('after()', () => {
       const mock = jest.fn();
 
       const demo = objectHooks(
@@ -74,10 +141,10 @@ describe("objectHooks()", () => {
 
       expect(demo.run()).toBeTruthy();
 
-      expect(mock).toBeCalled();
+      expect(mock).toHaveBeenCalled();
     });
 
-    it("after() can modify return value", () => {
+    it('after() can modify return value', () => {
       const demo = objectHooks(
         {
           run() {
@@ -94,7 +161,7 @@ describe("objectHooks()", () => {
       expect(demo.run()).toBe(2);
     });
 
-    it("after() can modify async return value", () => {
+    it('after() can modify async return value', async () => {
       const demo = objectHooks(
         {
           async run() {
@@ -116,11 +183,11 @@ describe("objectHooks()", () => {
         }
       );
 
-      expect(demo.run()).resolves.toBe(2);
-      expect(demo.getAge()).resolves.toBe(1);
+      await expect(demo.run()).resolves.toBe(2);
+      await expect(demo.getAge()).resolves.toBe(1);
     });
 
-    it("Supports custom before/after callbacks", () => {
+    it('Supports custom before/after callbacks', () => {
       const mockBefore = jest.fn();
       const mockBeforeRun = jest.fn();
       const mockAfter = jest.fn();
@@ -146,15 +213,15 @@ describe("objectHooks()", () => {
 
       demo.run();
 
-      expect(mockBefore).not.toBeCalled();
-      expect(mockBeforeRun).toBeCalled();
-      expect(mockAfter).toBeCalled();
+      expect(mockBefore).not.toHaveBeenCalled();
+      expect(mockBeforeRun).toHaveBeenCalled();
+      expect(mockAfter).toHaveBeenCalled();
     });
   });
 
-  describe("Caches methods", () => {
-    it("Stores the method in the cache", () => {
-      const obj = {
+  describe('Caches methods', () => {
+    it('Stores the method in the cache', () => {
+      let obj = {
         run() {
           return true;
         },
@@ -162,15 +229,43 @@ describe("objectHooks()", () => {
 
       const monitor = objectHooks(obj);
 
-      expect(objectHooks.cache.has(obj)).toBeFalsy();
+      const cache = objectHooks.getCache();
+
+      expect(cache.has(obj)).toBeFalsy();
 
       monitor.run();
 
-      expect(objectHooks.cache.has(obj)).toBeTruthy();
+      expect(cache.has(obj)).toBeTruthy();
 
-      expect(objectHooks.cache.get(obj).get("run")).toBeInstanceOf(Function);
+      expect(cache.get(obj).get('run')).toBeInstanceOf(Function);
 
-      expect(objectHooks.cache.get(obj).get("run")).toEqual(monitor.run);
+      expect(cache.get(obj).get('run')).toEqual(monitor.run);
+
+      obj = null;
+
+      expect(cache.has(obj)).toBeFalsy();
+    });
+  });
+
+  describe('Handles nested objects', () => {
+    it('Hooks into nested objects', () => {
+      const person = {
+        job: {
+          getTitle() {
+            return 'developer';
+          },
+        },
+      };
+
+      const demo = objectHooks(person, {
+        job: {
+          beforeGetTitle() {
+            return 'Software Developer';
+          },
+        },
+      });
+
+      expect(demo.job.getTitle()).toBe('Software Developer');
     });
   });
 });
