@@ -8,6 +8,14 @@ describe('objectHooks()', () => {
       expect(demo.name).toBe('Eric');
     });
 
+    it('Getters work like normal properties', () => {
+      const demo = objectHooks({
+        get name() { return 'Eric'; },
+      });
+
+      expect(demo.name).toBe('Eric');
+    });
+
     it('Calls a callback', () => {
       const person = objectHooks(
         {
