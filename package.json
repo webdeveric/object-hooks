@@ -1,8 +1,11 @@
 {
   "name": "@webdeveric/object-hooks",
+  "description": "",
   "version": "0.1.0",
   "private": true,
-  "description": "",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/objectHooks.cjs.js",
   "module": "dist/objectHooks.esm.js",
   "files": [
@@ -28,7 +31,7 @@
     "@babel/plugin-proposal-object-rest-spread": "^7.7.7",
     "@babel/preset-env": "^7.7.7",
     "@rollup/plugin-node-resolve": "^6.0.0",
-    "core-js": "^3.6.0",
+    "core-js": "^3.6.1",
     "eslint-config-webdeveric": "^0.4.0",
     "eslint-plugin-jest": "^23.1.1",
     "jest": "^24.9.0",
