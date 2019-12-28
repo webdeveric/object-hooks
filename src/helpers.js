@@ -89,3 +89,15 @@ export function callBefore(obj, prop, ...args) {
 export function callAfter(obj, prop, ...args) {
   return callCustom(obj, 'after', prop, ...args);
 }
+
+export function getHookNames(propName) {
+  const hook = toPascalCase( propName );
+
+  return [
+    // lcfirst(hook),
+    `before${hook}`,
+    `after${hook}`,
+    'before',
+    'after',
+  ];
+}

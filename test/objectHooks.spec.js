@@ -1,4 +1,4 @@
-import objectHooks from '../src/objectHooks';
+import { objectHooks, EVERY_PROPERTY } from '../src/objectHooks';
 
 describe('objectHooks()', () => {
   describe('Handles properties that are not functions', () => {
@@ -6,6 +6,7 @@ describe('objectHooks()', () => {
       const demo = objectHooks({ name: 'Eric' });
 
       expect(demo.name).toBe('Eric');
+      expect(demo.age).toBeUndefined();
     });
 
     it('Getters work like normal properties', () => {
@@ -32,10 +33,12 @@ describe('objectHooks()', () => {
           name( prop ) {
             return `WebDev${prop}`;
           },
-          symbolSymbolToPrimitive: prop => (...args) => {
-            const value = prop(...args);
+          symbolSymbolToPrimitive(prop) {
+            return (...args) => {
+              const value = prop.call(this, ...args);
 
-            return `WebDev${value}`;
+              return `WebDev${value}`;
+            };
           },
         });
 
@@ -69,6 +72,83 @@ describe('objectHooks()', () => {
   });
 
   describe('options', () => {
+    describe('EVERY_PROPERTY', () => {
+      it('Is called for every property.', () => {
+        const mock = jest.fn();
+
+        const person = {
+          name: 'Eric',
+          age: 100,
+        };
+
+        const demo = objectHooks(person, {
+          [ EVERY_PROPERTY ](/*prop, propName, cache */) {
+            mock();
+          },
+        });
+
+        expect(demo.name).toBe('Eric');
+
+        expect(demo.age).toBe(100);
+
+        expect(mock).toHaveBeenCalledTimes(2);
+      });
+
+      it('Can return a new value.', () => {
+        const person = {
+          age: 100,
+        };
+
+        const demo = objectHooks(person, {
+          [ EVERY_PROPERTY ](prop, propName) {
+            if ( propName === 'name' ) {
+              return  'Eric';
+            }
+
+            if ( propName === 'age' ) {
+              return prop + 1;
+            }
+          },
+        });
+
+        expect(demo.name).toBe('Eric');
+
+        expect(demo.fake).toBeUndefined();
+
+        expect(demo.age).toBe(101);
+      });
+    });
+
+    describe('Exact propName hook', () => {
+      it('Can return a different value', () => {
+        const person = {
+          name: 'Eric',
+          age: 100,
+          getAge() {
+            return this.age;
+          },
+          getName() {
+            return this.name;
+          },
+        };
+
+        const demo = objectHooks(person, {
+          getAge(/* prop, cache */) {
+            // Do nothing
+          },
+          getName(prop /*, cache */) {
+            return (...args) => {
+              return prop.call(this, ...args) + '!';
+            };
+          },
+        });
+
+        expect(demo.getAge()).toBe(100);
+
+        expect(demo.getName()).toBe('Eric!');
+      });
+    });
+
     it('Callbacks have correct \'this\'', () => {
       const person = {
         name: 'Eric',
@@ -127,6 +207,35 @@ describe('objectHooks()', () => {
 
       expect(results).toBe(shortCircuit);
       await expect(demo.getName()).resolves.toBe(shortCircuit);
+    });
+
+    it('before() arguments', () => {
+      const obj = {
+        run(...args) {
+          return args;
+        },
+      };
+
+      const demo = objectHooks(
+        obj,
+        {
+          beforeRun({
+            target,
+            thisArg,
+            prop,
+            func,
+            args,
+            callback, // This function is already bound to the correct object and arguments.
+          }) {
+            expect(target).toBe(obj);
+            expect(prop).toBe(func);
+            expect(args).toStrictEqual([ 1, 2, 3 ]);
+            expect(callback()).toStrictEqual([ 1, 2, 3 ]);
+          },
+        }
+      );
+
+      demo.run(1, 2, 3);
     });
 
     it('after()', () => {
@@ -229,29 +338,52 @@ describe('objectHooks()', () => {
 
   describe('Caches methods', () => {
     it('Stores the method in the cache', () => {
-      let obj = {
-        run() {
-          return true;
-        },
+      let callCount = 0;
+
+      const obj = {
+        run() {},
       };
 
-      const monitor = objectHooks(obj);
-
-      const cache = objectHooks.getCache();
-
-      expect(cache.has(obj)).toBeFalsy();
+      const monitor = objectHooks(obj, {
+        [ EVERY_PROPERTY ](prop, propName, cache) {
+          if ( callCount === 0 ) {
+            expect(cache.has(propName)).toBeFalsy();
+          } else {
+            expect(cache.has(propName)).toBeTruthy();
+          }
+        },
+        beforeRun() {
+          ++callCount;
+        },
+      });
 
       monitor.run();
 
-      expect(cache.has(obj)).toBeTruthy();
+      monitor.run();
+    });
 
-      expect(cache.get(obj).get('run')).toBeInstanceOf(Function);
+    it('Cache can be injected', () => {
+      const obj = {
+        run() {},
+      };
 
-      expect(cache.get(obj).get('run')).toEqual(monitor.run);
+      const cache = new Map();
 
-      obj = null;
+      const monitor = objectHooks(
+        obj,
+        {
+          beforeRun() {},
+        },
+        cache
+      );
 
-      expect(cache.has(obj)).toBeFalsy();
+      expect(cache.has('run')).toBeFalsy();
+
+      monitor.run();
+
+      expect(cache.has('run')).toBeTruthy();
+
+      expect(cache.get('run')).toBe(monitor.run);
     });
   });
 
