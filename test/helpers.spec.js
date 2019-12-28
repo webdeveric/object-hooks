@@ -10,6 +10,8 @@ import {
   lcfirst,
   ucfirst,
   toPascalCase,
+  toCamelCase,
+  getHookNames,
 } from '../src/helpers';
 
 const arrowFunc = () => {};
@@ -220,5 +222,35 @@ describe('toPascalCase', () => {
     expect(toPascalCase('disk_io', wordMap)).toBe('DiskIO');
     expect(toPascalCase('user_id', wordMap)).toBe('UserId');
     expect(toPascalCase('user_id', {})).toBe('UserId');
+  });
+});
+
+describe('toCamelCase', () => {
+  it('Handles snake case', () => {
+    expect(toCamelCase('do_something_cool')).toBe('doSomethingCool');
+  });
+
+  it('Handles pascal case', () => {
+    expect(toCamelCase('DoSomethingCool')).toBe('doSomethingCool');
+  });
+
+  it('Handles complex sentences', () => {
+    expect(toCamelCase('Hello world! How are you today?')).toBe(
+      'helloWorldHowAreYouToday'
+    );
+  });
+
+  it('Handles numbers', () => {
+    expect(toCamelCase('Abc123def')).toBe('abc123Def');
+  });
+
+  it('Handles symbols', () => {
+    expect(toCamelCase(Symbol('test'))).toBe('symbolTest');
+  });
+});
+
+describe('getHookNames', () => {
+  it('Returns an array', () => {
+    expect(Array.isArray(getHookNames('run'))).toBeTruthy();
   });
 });

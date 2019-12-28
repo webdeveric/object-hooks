@@ -3,18 +3,33 @@ import { objectHooks, EVERY_PROPERTY } from '../src/objectHooks';
 describe('objectHooks()', () => {
   describe('Handles properties that are not functions', () => {
     it('Returns the property', () => {
-      const demo = objectHooks({ name: 'Eric' });
+      const zero = Symbol('Zero');
+
+      const obj = {
+        [ zero ]: 'Zero',
+        [ 1 ]: 'One',
+        name: 'Eric',
+      };
+
+      const demo = objectHooks(obj);
 
       expect(demo.name).toBe('Eric');
+      expect(demo[ zero ]).toBe('Zero');
+      expect(demo[ 1 ]).toBe('One');
       expect(demo.age).toBeUndefined();
     });
 
     it('Getters work like normal properties', () => {
       const demo = objectHooks({
-        get name() { return 'Eric'; },
+        realName: 'Eric',
+        get name() { return this.realName; },
+      }, {
+        name( prop ) {
+          return prop.toLowerCase();
+        },
       });
 
-      expect(demo.name).toBe('Eric');
+      expect(demo.name).toBe('eric');
     });
 
     it('Calls a callback', () => {
@@ -59,7 +74,7 @@ describe('objectHooks()', () => {
       }).toThrow();
     });
 
-    it('options must be an object', () => {
+    it('hooks must be an object', () => {
       expect(() => {
         objectHooks({}, {});
         objectHooks({}, undefined);
@@ -71,7 +86,7 @@ describe('objectHooks()', () => {
     });
   });
 
-  describe('options', () => {
+  describe('hooks', () => {
     describe('EVERY_PROPERTY', () => {
       it('Is called for every property.', () => {
         const mock = jest.fn();
@@ -228,6 +243,7 @@ describe('objectHooks()', () => {
             callback, // This function is already bound to the correct object and arguments.
           }) {
             expect(target).toBe(obj);
+            expect(thisArg).toBeInstanceOf(Object);
             expect(prop).toBe(func);
             expect(args).toStrictEqual([ 1, 2, 3 ]);
             expect(callback()).toStrictEqual([ 1, 2, 3 ]);

@@ -15,12 +15,7 @@ export function capitalize(text) {
 }
 
 export function toPascalCase(text, customWords) {
-  let pascal = String(text)
-    .replace(/[^a-zA-Z0-9]/g, ' ')
-    .trim()
-    .split(/(?=[A-Z])|(\d+)|\s+/)
-    .filter(Boolean)
-    .map(capitalize);
+  let words = String(text).match( /[A-Za-z]+|\d+/ig ).map(ucfirst);
 
   if (customWords && typeof customWords === 'object') {
     const replacements = Object.entries(customWords).map(([ key, value ]) => [
@@ -42,11 +37,15 @@ export function toPascalCase(text, customWords) {
         return word;
       };
 
-      pascal = pascal.map(replaceCustomWords);
+      words = words.map(replaceCustomWords);
     }
   }
 
-  return pascal.join('');
+  return words.join('');
+}
+
+export function toCamelCase(text) {
+  return lcfirst( toPascalCase(text) );
 }
 
 export function isObject(arg) {
@@ -70,7 +69,7 @@ export function supportsCallback(obj, propName) {
 }
 
 export function callCustom(obj, prefix, prop, ...args) {
-  const prefixCallback = lcfirst( toPascalCase(prefix) );
+  const prefixCallback = toCamelCase(prefix);
   const customCallback = prefixCallback + toPascalCase(prop);
 
   if (supportsCallback(obj, customCallback)) {

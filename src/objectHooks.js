@@ -5,35 +5,27 @@ import {
   isFunction,
   isAsyncFunction,
   supportsCallback,
-  toPascalCase,
-  lcfirst,
+  toCamelCase,
   getHookNames,
 } from './helpers';
 
 export const EVERY_PROPERTY = Symbol('EVERY_PROPERTY');
 
-export function objectHooks(obj, options = {}, cache = new Map())
+export function objectHooks(obj, hooks = {}, cache = new Map())
 {
   if ( ! isObject( obj ) ) {
     throw new Error('objectHooks obj must be an object');
   }
 
-  if ( ! isObject( options ) ) {
-    throw new Error('objectHooks options must be an object');
+  if ( ! isObject( hooks ) ) {
+    throw new Error('objectHooks hooks must be an object');
   }
 
   const handler = {
     cache,
-    get(target, propName /*, receiver */) {
-      // const descriptor = Reflect.getOwnPropertyDescriptor(target, propName);
-
-      // console.log(descriptor);
-
-      let prop = Reflect.get(target, propName /*, receiver */);
-
-      // if ( isFunction(prop) ) {
-      //   prop = prop.bind(target);
-      // }
+    // Trap for getting a property value.
+    get(target, propName, receiver) {
+      const prop =Reflect.get(target, propName, receiver);
 
       /**
        * If the EVERY_PROPERTY callback exists, it will be called for every
@@ -42,8 +34,8 @@ export function objectHooks(obj, options = {}, cache = new Map())
        * The callback should return the prop or a replacement for it.
        * The exactHook callback will have "this" be the target object.
        */
-      if ( supportsCallback(options, EVERY_PROPERTY) ) {
-        const value = options[ EVERY_PROPERTY ].call(
+      if ( supportsCallback(hooks, EVERY_PROPERTY) ) {
+        const value = hooks[ EVERY_PROPERTY ].call(
           target,
           prop,
           propName,
@@ -64,9 +56,9 @@ export function objectHooks(obj, options = {}, cache = new Map())
 
       const hookNames = getHookNames( propName );
 
-      const shouldHook = hookNames.some( name => supportsCallback(options, name) );
+      const shouldHook = hookNames.some( name => supportsCallback(hooks, name) );
 
-      const exactHook = lcfirst( toPascalCase( propName ) );
+      const exactHook = toCamelCase( propName );
 
       /**
        * If propName has a matching exactHook callback, it will be called with prop and cache as the arguments.
@@ -74,8 +66,8 @@ export function objectHooks(obj, options = {}, cache = new Map())
        * The callback should return the prop or a replacement for it.
        * The exactHook callback will have "this" be the target object.
        */
-      if ( supportsCallback(options, exactHook) ) {
-        const value = options[ exactHook ].call(
+      if ( supportsCallback(hooks, exactHook) ) {
+        const value = hooks[ exactHook ].call(
           target,
           prop,
           this.cache
@@ -86,7 +78,7 @@ export function objectHooks(obj, options = {}, cache = new Map())
         }
       }
 
-      const nestedObject = isObject(prop) && isObject(options[ propName ]);
+      const nestedObject = isObject(prop) && isObject(hooks[ propName ]);
 
       if ( ! shouldHook && ! nestedObject ) {
         return prop;
@@ -95,13 +87,13 @@ export function objectHooks(obj, options = {}, cache = new Map())
       let newProp;
 
       if ( nestedObject ) {
-        newProp = objectHooks(prop, options[ propName ]);
+        newProp = objectHooks(prop, hooks[ propName ]);
       }
 
       if ( isFunction(prop) ) {
         const functionHandler = isAsyncFunction(prop) ? {
           async apply(func, thisArg, args) {
-            const before = await callBefore(options, propName, {
+            const before = await callBefore(hooks, propName, {
               target,
               thisArg,
               prop,
@@ -117,7 +109,7 @@ export function objectHooks(obj, options = {}, cache = new Map())
 
             const returnValue = await func(...args);
 
-            const after = await callAfter(options, propName, {
+            const after = await callAfter(hooks, propName, {
               target,
               prop,
               args,
@@ -129,7 +121,7 @@ export function objectHooks(obj, options = {}, cache = new Map())
           },
         } : {
           apply(func, thisArg, args) {
-            const before = callBefore(options, propName, {
+            const before = callBefore(hooks, propName, {
               target,
               thisArg,
               prop,
@@ -145,7 +137,7 @@ export function objectHooks(obj, options = {}, cache = new Map())
 
             const returnValue = func(...args);
 
-            const after = callAfter(options, propName, {
+            const after = callAfter(hooks, propName, {
               target,
               prop,
               args,
