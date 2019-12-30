@@ -277,6 +277,35 @@ describe('objectHooks()', () => {
       expect(mock).toHaveBeenCalled();
     });
 
+    it('after() arguments', () => {
+      const obj = {
+        run(...args) {
+          return args;
+        },
+      };
+
+      const demo = objectHooks(
+        obj,
+        {
+          afterRun({
+            target,
+            thisArg,
+            prop,
+            args,
+            returnValue,
+          }) {
+            expect(target).toBe(obj);
+            expect(thisArg).toBeInstanceOf(Object);
+            expect(prop).toBeInstanceOf(Function);
+            expect(args).toStrictEqual([ 1, 2, 3 ]);
+            expect(returnValue).toStrictEqual([ 1, 2, 3 ]);
+          },
+        }
+      );
+
+      demo.run(1, 2, 3);
+    });
+
     it('after() can modify return value', () => {
       const demo = objectHooks(
         {
@@ -349,6 +378,36 @@ describe('objectHooks()', () => {
       expect(mockBefore).not.toHaveBeenCalled();
       expect(mockBeforeRun).toHaveBeenCalled();
       expect(mockAfter).toHaveBeenCalled();
+    });
+
+    it('Calls the function with the correct "this"', () => {
+      const mock = jest.fn();
+
+      const foo = {
+        name: 'foo',
+      };
+
+      const demo = objectHooks(
+        {
+          name: 'bar',
+          getName() {
+            return this.name;
+          },
+        },
+        {
+          afterGetName() {
+            mock();
+          },
+        }
+      );
+
+      expect(demo.getName()).toBe('bar');
+
+      const { getName } = demo;
+
+      expect(getName.call(foo)).toBe('foo');
+
+      expect(mock).toHaveBeenCalledTimes(2);
     });
   });
 

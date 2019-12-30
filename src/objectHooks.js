@@ -25,7 +25,7 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
     cache,
     // Trap for getting a property value.
     get(target, propName, receiver) {
-      const prop =Reflect.get(target, propName, receiver);
+      const prop = Reflect.get(target, propName, receiver);
 
       /**
        * If the EVERY_PROPERTY callback exists, it will be called for every
@@ -107,10 +107,11 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
               return before;
             }
 
-            const returnValue = await func(...args);
+            const returnValue = await func.apply(thisArg, args);
 
             const after = await callAfter(hooks, propName, {
               target,
+              thisArg,
               prop,
               args,
               returnValue,
@@ -135,10 +136,11 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
               return before;
             }
 
-            const returnValue = func(...args);
+            const returnValue = func.apply(thisArg, args);
 
             const after = callAfter(hooks, propName, {
               target,
+              thisArg,
               prop,
               args,
               returnValue,
