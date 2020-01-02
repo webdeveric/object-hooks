@@ -99,7 +99,7 @@ export function getHookNames(propName) {
   const hook = toPascalCase( propName );
 
   return [
-    // lcfirst(hook),
+    lcfirst(hook),
     `before${hook}`,
     `after${hook}`,
     'before',

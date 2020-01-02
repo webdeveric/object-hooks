@@ -136,31 +136,75 @@ describe('objectHooks()', () => {
 
     describe('Exact propName hook', () => {
       it('Can return a different value', () => {
+        const ageMock = jest.fn();
+        const nameMock = jest.fn();
+
         const person = {
           name: 'Eric',
           age: 100,
-          getAge() {
-            return this.age;
-          },
           getName() {
             return this.name;
           },
         };
 
         const demo = objectHooks(person, {
-          getAge(/* prop, cache */) {
+          age(/* prop, cache */) {
             // Do nothing
+            ageMock();
           },
           getName(prop /*, cache */) {
+            nameMock();
+
             return (...args) => {
               return prop.call(this, ...args) + '!';
             };
           },
         });
 
-        expect(demo.getAge()).toBe(100);
+        expect(demo.age).toBe(100);
+        expect(demo.age).toBe(100);
+        expect(ageMock).toHaveBeenCalledTimes(2);
 
         expect(demo.getName()).toBe('Eric!');
+        expect(demo.getName()).toBe('Eric!');
+        expect(nameMock).toHaveBeenCalledTimes(2);
+      });
+
+      it('Can cache values', () => {
+        const mock = jest.fn();
+
+        const cache = new Map();
+
+        const person = {
+          name: 'Eric',
+          getName() {
+            return this.name;
+          },
+        };
+
+        const demo = objectHooks(person, {
+          getName(prop, cache) {
+            mock();
+
+            const callback = (...args) => {
+              return prop.call(this, ...args) + '!';
+            };
+
+            cache.set('getName', callback);
+
+            return callback;
+          },
+        }, cache);
+
+        expect(cache.has('getName')).toBeFalsy();
+
+        expect(demo.getName()).toBe('Eric!');
+
+        expect(cache.has('getName')).toBeTruthy();
+
+        expect(demo.getName()).toBe('Eric!');
+
+        expect(mock).toHaveBeenCalledTimes(1);
       });
     });
 

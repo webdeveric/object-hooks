@@ -25,14 +25,18 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
     cache,
     // Trap for getting a property value.
     get(target, propName, receiver) {
+      // Return cached hooked prop if it exists.
+      if ( this.cache.has(propName) ) {
+        return this.cache.get(propName);
+      }
+
       const prop = Reflect.get(target, propName, receiver);
 
       /**
-       * If the EVERY_PROPERTY callback exists, it will be called for every
-       * property access regardless of contents of the cache.
-       * If prop is a function, it will be bound to the target.
-       * The callback should return the prop or a replacement for it.
-       * The exactHook callback will have "this" be the target object.
+       * If the EVERY_PROPERTY callback exists, it will be called for every uncached property access.
+       * The callback can return the prop or a replacement for it.
+       * If nothing is returned, it'll continue with looking for other hooks to call.
+       * The EVERY_PROPERTY callback will have "this" be the target object.
        */
       if ( supportsCallback(hooks, EVERY_PROPERTY) ) {
         const value = hooks[ EVERY_PROPERTY ].call(
@@ -47,23 +51,13 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
         }
       }
 
-      /**
-       * Return cached hooked prop if it exists.
-       */
-      if ( this.cache.has(propName) ) {
-        return this.cache.get(propName);
-      }
-
-      const hookNames = getHookNames( propName );
-
-      const shouldHook = hookNames.some( name => supportsCallback(hooks, name) );
+      const shouldHook = getHookNames( propName ).some( name => supportsCallback(hooks, name) );
 
       const exactHook = toCamelCase( propName );
 
       /**
        * If propName has a matching exactHook callback, it will be called with prop and cache as the arguments.
-       * If prop is a function, it will be bound to the target.
-       * The callback should return the prop or a replacement for it.
+       * The callback can return the prop or a replacement for it.
        * The exactHook callback will have "this" be the target object.
        */
       if ( supportsCallback(hooks, exactHook) ) {
@@ -154,9 +148,7 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
         newProp = new Proxy(prop, functionHandler);
       }
 
-      this.cache.set(propName, newProp);
-
-      return newProp;
+      return newProp ? this.cache.set(propName, newProp).get(propName) : prop;
     },
   };
 
