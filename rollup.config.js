@@ -1,6 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
+import commonjs from '@rollup/plugin-commonjs';
 import filesize from 'rollup-plugin-filesize';
 import del from 'rollup-plugin-delete';
 import { eslint } from 'rollup-plugin-eslint';
@@ -33,7 +33,7 @@ export default {
       extensions: [ '.js' ],
     }),
     commonjs({
-      include: [ './src/*', 'node_modules/**' ],
+      include: [ 'node_modules/**' ],
     }),
     eslint({
       include: 'src/**/*.js',
