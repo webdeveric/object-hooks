@@ -15,7 +15,13 @@ export function capitalize(text) {
 }
 
 export function toPascalCase(text, customWords) {
-  let words = String(text).match( /[A-Za-z]+|\d+/ig ).map(ucfirst);
+  let words = String(text).match( /[A-Z][a-z]+|\d+|[a-z]+/g );
+
+  if ( ! words ) {
+    return '';
+  }
+
+  words = words.map(ucfirst);
 
   if (customWords && typeof customWords === 'object') {
     const replacements = Object.entries(customWords).map(([ key, value ]) => [
