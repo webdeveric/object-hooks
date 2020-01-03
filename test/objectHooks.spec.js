@@ -1,4 +1,6 @@
-import { objectHooks, EVERY_PROPERTY } from '../src/objectHooks';
+import {
+  objectHooks, PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY, 
+} from '../src/objectHooks';
 
 describe('objectHooks()', () => {
   describe('Handles properties that are not functions', () => {
@@ -87,50 +89,200 @@ describe('objectHooks()', () => {
   });
 
   describe('hooks', () => {
-    describe('EVERY_PROPERTY', () => {
-      it('Is called for every property.', () => {
-        const mock = jest.fn();
+    it('Returns the prop if no hooks defined', () => {
+      const person = {
+        name: 'Eric',
+      };
 
-        const person = {
-          name: 'Eric',
-          age: 100,
-        };
+      const demo = objectHooks(person);
 
-        const demo = objectHooks(person, {
-          [ EVERY_PROPERTY ](/*prop, propName, cache */) {
-            mock();
-          },
+      expect(demo.name).toStrictEqual(person.name);
+      expect(demo.name === person.name).toBeTruthy();
+    });
+
+    describe('Symbol callbacks', () => {
+      describe('PROPERTY', () => {
+        it('Is called for every property.', () => {
+          const mock = jest.fn();
+
+          const person = {
+            name: 'Eric',
+            age: 100,
+          };
+
+          const demo = objectHooks(person, {
+            [ PROPERTY ](/*prop, propName, cache */) {
+              mock();
+            },
+          });
+
+          expect(demo.name).toBe('Eric');
+
+          expect(demo.age).toBe(100);
+
+          expect(mock).toHaveBeenCalledTimes(2);
         });
 
-        expect(demo.name).toBe('Eric');
+        it('Can return a new value.', () => {
+          const person = {
+            age: 100,
+          };
 
-        expect(demo.age).toBe(100);
+          const demo = objectHooks(person, {
+            [ PROPERTY ](prop, propName) {
+              if ( propName === 'name' ) {
+                return  'Eric';
+              }
 
-        expect(mock).toHaveBeenCalledTimes(2);
+              if ( propName === 'age' ) {
+                return prop + 1;
+              }
+            },
+          });
+
+          expect(demo.name).toBe('Eric');
+
+          expect(demo.fake).toBeUndefined();
+
+          expect(demo.age).toBe(101);
+        });
       });
 
-      it('Can return a new value.', () => {
-        const person = {
-          age: 100,
-        };
+      describe('BEFORE_PROPERTY', () => {
+        it('Is called', () => {
+          const mock = jest.fn();
 
-        const demo = objectHooks(person, {
-          [ EVERY_PROPERTY ](prop, propName) {
-            if ( propName === 'name' ) {
-              return  'Eric';
+          const demo = objectHooks(
+            {
+              run() {},
+            },
+            {
+              [ BEFORE_PROPERTY ]() {
+                mock();
+              },
             }
+          );
 
-            if ( propName === 'age' ) {
-              return prop + 1;
-            }
-          },
+          demo.run();
+
+          expect(mock).toHaveBeenCalled();
         });
 
-        expect(demo.name).toBe('Eric');
+        it('Can short circuit', () => {
+          const shortCircuit = 'short circuit';
 
-        expect(demo.fake).toBeUndefined();
+          const demo = objectHooks(
+            {
+              getName() {
+                return 'Eric';
+              },
+            },
+            {
+              [ BEFORE_PROPERTY ]() {
+                return shortCircuit;
+              },
+            }
+          );
 
-        expect(demo.age).toBe(101);
+          expect(demo.getName()).toBe(shortCircuit);
+        });
+
+        it('arguments', () => {
+          const obj = {
+            run(...args) {
+              return args;
+            },
+          };
+
+          const demo = objectHooks(
+            obj,
+            {
+              [ BEFORE_PROPERTY ]({
+                target,
+                thisArg,
+                prop,
+                func,
+                args,
+                callback, // This function is already bound to the correct object and arguments.
+              }) {
+                expect(target).toBe(obj);
+                expect(thisArg).toBeInstanceOf(Object);
+                expect(prop).toBe(func);
+                expect(args).toStrictEqual([ 1, 2, 3 ]);
+                expect(callback()).toStrictEqual([ 1, 2, 3 ]);
+              },
+            }
+          );
+
+          demo.run(1, 2, 3);
+        });
+      });
+
+      describe('AFTER_PROPERTY', () => {
+        it('Is called', () => {
+          const mock = jest.fn();
+
+          const demo = objectHooks(
+            {
+              run() {},
+            },
+            {
+              [ AFTER_PROPERTY ]() {
+                mock();
+              },
+            }
+          );
+
+          demo.run();
+
+          expect(mock).toHaveBeenCalled();
+        });
+
+        it('Can return a new value', () => {
+          const demo = objectHooks(
+            {
+              getName() {
+                return 'Eric';
+              },
+            },
+            {
+              [ AFTER_PROPERTY ]({ returnValue }) {
+                return returnValue + '!';
+              },
+            }
+          );
+
+          expect(demo.getName()).toBe('Eric!');
+        });
+
+        it('arguments', () => {
+          const obj = {
+            run(...args) {
+              return args;
+            },
+          };
+
+          const demo = objectHooks(
+            obj,
+            {
+              [ AFTER_PROPERTY ]({
+                target,
+                thisArg,
+                prop,
+                args,
+                returnValue,
+              }) {
+                expect(target).toBe(obj);
+                expect(thisArg).toBeInstanceOf(Object);
+                expect(prop).toBe(obj.run);
+                expect(args).toStrictEqual([ 1, 2, 3 ]);
+                expect(returnValue).toStrictEqual([ 1, 2, 3 ]);
+              },
+            }
+          );
+
+          demo.run(1, 2, 3);
+        });
       });
     });
 
@@ -144,6 +296,9 @@ describe('objectHooks()', () => {
           age: 100,
           getName() {
             return this.name;
+          },
+          job: {
+            title: 'developer',
           },
         };
 
@@ -159,6 +314,9 @@ describe('objectHooks()', () => {
               return prop.call(this, ...args) + '!';
             };
           },
+          job(prop) {
+            return Object.assign({}, prop, { title: 'software developer' });
+          },
         });
 
         expect(demo.age).toBe(100);
@@ -168,6 +326,8 @@ describe('objectHooks()', () => {
         expect(demo.getName()).toBe('Eric!');
         expect(demo.getName()).toBe('Eric!');
         expect(nameMock).toHaveBeenCalledTimes(2);
+
+        expect(demo.job.title).toBe('software developer');
       });
 
       it('Can cache values', () => {
@@ -208,6 +368,152 @@ describe('objectHooks()', () => {
       });
     });
 
+    describe('Before/after propName hooks', () => {
+      it('Supports custom before/after callbacks', () => {
+        const mockBeforeRun = jest.fn();
+        const mockAfterRun = jest.fn();
+
+        const demo = objectHooks(
+          {
+            run() {
+              return true;
+            },
+          },
+          {
+            beforeRun() {
+              mockBeforeRun();
+            },
+            afterRun() {
+              mockAfterRun();
+            },
+          }
+        );
+
+        expect(demo.run()).toBeTruthy();
+
+        expect(mockBeforeRun).toHaveBeenCalled();
+        expect(mockAfterRun).toHaveBeenCalled();
+      });
+
+      it('before propName arguments', () => {
+        const obj = {
+          run(...args) {
+            return args;
+          },
+        };
+
+        const demo = objectHooks(
+          obj,
+          {
+            beforeRun({
+              target,
+              thisArg,
+              prop,
+              func,
+              args,
+              callback,
+            }) {
+              expect(target).toBe(obj);
+              expect(thisArg).toBeInstanceOf(Object);
+              expect(prop).toBe(func);
+              expect(args).toStrictEqual([ 1, 2, 3 ]);
+              expect(callback()).toStrictEqual([ 1, 2, 3 ]);
+            },
+          }
+        );
+
+        demo.run(1, 2, 3);
+      });
+
+      it('after propName arguments', () => {
+        const obj = {
+          run(...args) {
+            return args;
+          },
+        };
+
+        const demo = objectHooks(
+          obj,
+          {
+            afterRun({
+              target,
+              thisArg,
+              prop,
+              args,
+              returnValue,
+            }) {
+              expect(target).toBe(obj);
+              expect(thisArg).toBeInstanceOf(Object);
+              expect(prop).toBeInstanceOf(Function);
+              expect(args).toStrictEqual([ 1, 2, 3 ]);
+              expect(returnValue).toStrictEqual([ 1, 2, 3 ]);
+            },
+          }
+        );
+
+        demo.run(1, 2, 3);
+      });
+
+      it('after propName can modify return value', () => {
+        const demo = objectHooks(
+          {
+            run() {
+              return 1;
+            },
+          },
+          {
+            afterRun({ returnValue }) {
+              return returnValue + 1;
+            },
+          }
+        );
+
+        expect(demo.run()).toBe(2);
+      });
+
+      it('after propName can modify async return value', async () => {
+        const demo = objectHooks(
+          {
+            async run() {
+              return 1;
+            },
+            async getAge() {
+              const age = await Promise.resolve(1);
+
+              return age;
+            },
+          },
+          {
+            async afterRun({ returnValue }) {
+              return returnValue + 1;
+            },
+            async afterGetAge() {
+              // Do something here.
+            },
+          }
+        );
+
+        await expect(demo.run()).resolves.toBe(2);
+        await expect(demo.getAge()).resolves.toBe(1);
+      });
+
+      it('before/after hooks on scalars throw an error', () => {
+        const demo = objectHooks(
+          {
+            age: 100,
+          },
+          {
+            beforeAge() {
+            },
+          }
+        );
+
+        expect(() => {
+          demo.age;
+        }).toThrow();
+      });
+    });
+
     it('Callbacks have correct \'this\'', () => {
       const person = {
         name: 'Eric',
@@ -222,206 +528,6 @@ describe('objectHooks()', () => {
       });
 
       expect(demo.name).toBe('Eric');
-    });
-
-    it('before()', () => {
-      const mock = jest.fn();
-
-      const demo = objectHooks(
-        {
-          run() {},
-        },
-        {
-          before() {
-            mock();
-          },
-        }
-      );
-
-      demo.run();
-
-      expect(mock).toHaveBeenCalled();
-    });
-
-    it('before() short circuit', async () => {
-      const shortCircuit = 'short circuit';
-
-      const demo = objectHooks(
-        {
-          run() {},
-          async getName() {
-            const name = await Promise.resolve('Eric');
-
-            return name;
-          },
-        },
-        {
-          before() {
-            return shortCircuit;
-          },
-        }
-      );
-
-      const results = demo.run();
-
-      expect(results).toBe(shortCircuit);
-      await expect(demo.getName()).resolves.toBe(shortCircuit);
-    });
-
-    it('before() arguments', () => {
-      const obj = {
-        run(...args) {
-          return args;
-        },
-      };
-
-      const demo = objectHooks(
-        obj,
-        {
-          beforeRun({
-            target,
-            thisArg,
-            prop,
-            func,
-            args,
-            callback, // This function is already bound to the correct object and arguments.
-          }) {
-            expect(target).toBe(obj);
-            expect(thisArg).toBeInstanceOf(Object);
-            expect(prop).toBe(func);
-            expect(args).toStrictEqual([ 1, 2, 3 ]);
-            expect(callback()).toStrictEqual([ 1, 2, 3 ]);
-          },
-        }
-      );
-
-      demo.run(1, 2, 3);
-    });
-
-    it('after()', () => {
-      const mock = jest.fn();
-
-      const demo = objectHooks(
-        {
-          run() {
-            return true;
-          },
-        },
-        {
-          after({ returnValue }) {
-            mock();
-
-            expect(returnValue).toBe(true);
-          },
-        }
-      );
-
-      expect(demo.run()).toBeTruthy();
-
-      expect(mock).toHaveBeenCalled();
-    });
-
-    it('after() arguments', () => {
-      const obj = {
-        run(...args) {
-          return args;
-        },
-      };
-
-      const demo = objectHooks(
-        obj,
-        {
-          afterRun({
-            target,
-            thisArg,
-            prop,
-            args,
-            returnValue,
-          }) {
-            expect(target).toBe(obj);
-            expect(thisArg).toBeInstanceOf(Object);
-            expect(prop).toBeInstanceOf(Function);
-            expect(args).toStrictEqual([ 1, 2, 3 ]);
-            expect(returnValue).toStrictEqual([ 1, 2, 3 ]);
-          },
-        }
-      );
-
-      demo.run(1, 2, 3);
-    });
-
-    it('after() can modify return value', () => {
-      const demo = objectHooks(
-        {
-          run() {
-            return 1;
-          },
-        },
-        {
-          after({ returnValue }) {
-            return returnValue + 1;
-          },
-        }
-      );
-
-      expect(demo.run()).toBe(2);
-    });
-
-    it('after() can modify async return value', async () => {
-      const demo = objectHooks(
-        {
-          async run() {
-            return 1;
-          },
-          async getAge() {
-            const age = await Promise.resolve(1);
-
-            return age;
-          },
-        },
-        {
-          async afterRun({ returnValue }) {
-            return returnValue + 1;
-          },
-          async afterGetAge() {
-            // Do something here.
-          },
-        }
-      );
-
-      await expect(demo.run()).resolves.toBe(2);
-      await expect(demo.getAge()).resolves.toBe(1);
-    });
-
-    it('Supports custom before/after callbacks', () => {
-      const mockBefore = jest.fn();
-      const mockBeforeRun = jest.fn();
-      const mockAfter = jest.fn();
-
-      const demo = objectHooks(
-        {
-          run() {
-            return true;
-          },
-        },
-        {
-          before() {
-            mockBefore();
-          },
-          beforeRun() {
-            mockBeforeRun();
-          },
-          after() {
-            mockAfter();
-          },
-        }
-      );
-
-      demo.run();
-
-      expect(mockBefore).not.toHaveBeenCalled();
-      expect(mockBeforeRun).toHaveBeenCalled();
-      expect(mockAfter).toHaveBeenCalled();
     });
 
     it('Calls the function with the correct "this"', () => {
@@ -453,6 +559,75 @@ describe('objectHooks()', () => {
 
       expect(mock).toHaveBeenCalledTimes(2);
     });
+
+    describe('Advanced use cases', () => {
+      it('Async before hooks return a value', async () => {
+        const person = {
+          async getLocation() {
+            return [ 0, 0 ];
+          },
+        };
+
+        const demo = objectHooks(person, {
+          async beforeGetLocation() {
+            return [ 90, 90 ];
+          },
+        });
+
+        await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+      });
+
+      it('Async before hooks don\'t return a value', async () => {
+        const person = {
+          async getLocation() {
+            return [ 0, 0 ];
+          },
+        };
+
+        const demo = objectHooks(person, {
+          async [ BEFORE_PROPERTY ]() {
+          },
+          async beforeGetLocation() {
+          },
+        });
+
+        await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 0, 0 ]));
+      });
+
+      it('Async after hooks return a value', async () => {
+        const person = {
+          async getLocation() {
+            return [ 0, 0 ];
+          },
+        };
+
+        const demo = objectHooks(person, {
+          async [ AFTER_PROPERTY ]() {
+          },
+          async afterGetLocation() {
+            return [ 90, 90 ];
+          },
+        });
+
+        await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+      });
+
+      it('Async after hooks don\'t return a value', async () => {
+        const person = {
+          async getLocation() {
+            return [ 0, 0 ];
+          },
+        };
+
+        const demo = objectHooks(person, {
+          async afterGetLocation() {
+            return [ 90, 90 ];
+          },
+        });
+
+        await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+      });
+    });
   });
 
   describe('Caches methods', () => {
@@ -464,7 +639,7 @@ describe('objectHooks()', () => {
       };
 
       const monitor = objectHooks(obj, {
-        [ EVERY_PROPERTY ](prop, propName, cache) {
+        [ PROPERTY ](prop, propName, cache) {
           if ( callCount === 0 ) {
             expect(cache.has(propName)).toBeFalsy();
           } else {

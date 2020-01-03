@@ -1,15 +1,13 @@
 import {
-  callBefore,
-  callAfter,
   isObject,
   isFunction,
   isAsyncFunction,
-  supportsCallback,
-  toCamelCase,
-  getHookNames,
+  getHooks,
+  getFirstValue,
+  getFirstValueAsync,
 } from './helpers';
 
-export const EVERY_PROPERTY = Symbol('EVERY_PROPERTY');
+export * from './symbols';
 
 export function objectHooks(obj, hooks = {}, cache = new Map())
 {
@@ -32,46 +30,27 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
 
       const prop = Reflect.get(target, propName, receiver);
 
-      /**
-       * If the EVERY_PROPERTY callback exists, it will be called for every uncached property access.
-       * The callback can return the prop or a replacement for it.
-       * If nothing is returned, it'll continue with looking for other hooks to call.
-       * The EVERY_PROPERTY callback will have "this" be the target object.
-       */
-      if ( supportsCallback(hooks, EVERY_PROPERTY) ) {
-        const value = hooks[ EVERY_PROPERTY ].call(
-          target,
-          prop,
-          propName,
-          this.cache
+      const {
+        genericPropHook,
+        genericBeforeHook,
+        genericAfterHook,
+        propHook,
+        beforeHook,
+        afterHook,
+      } = getHooks( hooks, propName );
+
+      if ( genericPropHook || propHook ) {
+        const preemptValue = getFirstValue(
+          propHook && propHook.bind(target, prop, this.cache),
+          genericPropHook && genericPropHook.bind(target, prop, propName, this.cache)
         );
 
-        if (value !== undefined) {
-          return value;
+        if (preemptValue !== undefined) {
+          return preemptValue;
         }
       }
 
-      const shouldHook = getHookNames( propName ).some( name => supportsCallback(hooks, name) );
-
-      const exactHook = toCamelCase( propName );
-
-      /**
-       * If propName has a matching exactHook callback, it will be called with prop and cache as the arguments.
-       * The callback can return the prop or a replacement for it.
-       * The exactHook callback will have "this" be the target object.
-       */
-      if ( supportsCallback(hooks, exactHook) ) {
-        const value = hooks[ exactHook ].call(
-          target,
-          prop,
-          this.cache
-        );
-
-        if (value !== undefined) {
-          return value;
-        }
-      }
-
+      const shouldHook = !!( genericBeforeHook || genericAfterHook || beforeHook || afterHook );
       const nestedObject = isObject(prop) && isObject(hooks[ propName ]);
 
       if ( ! shouldHook && ! nestedObject ) {
@@ -87,68 +66,106 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
       if ( isFunction(prop) ) {
         const functionHandler = isAsyncFunction(prop) ? {
           async apply(func, thisArg, args) {
-            const before = await callBefore(hooks, propName, {
-              target,
-              thisArg,
-              prop,
-              func,
-              args,
-              callback: func.bind(thisArg, ...args),
-            });
+            if ( genericBeforeHook || beforeHook ) {
+              const hookOptions = {
+                target,
+                thisArg,
+                prop,
+                func,
+                args,
+                callback: func.bind(thisArg, ...args),
+              };
 
-            // Allow short circuiting.
-            if (before !== undefined) {
-              return before;
+              const value = await getFirstValueAsync(
+                beforeHook && beforeHook.bind(target, hookOptions),
+                genericBeforeHook && genericBeforeHook.bind(target, hookOptions)
+              );
+
+              // Allow short circuiting.
+              if (value !== undefined) {
+                return value;
+              }
             }
 
             const returnValue = await func.apply(thisArg, args);
 
-            const after = await callAfter(hooks, propName, {
-              target,
-              thisArg,
-              prop,
-              args,
-              returnValue,
-            });
+            if ( genericAfterHook || afterHook ) {
+              const hookOptions = {
+                target,
+                thisArg,
+                prop,
+                args,
+                returnValue,
+              };
 
-            // Allow modifying the return value
-            return after !== undefined ? after : returnValue;
+              const value = await getFirstValueAsync(
+                afterHook && afterHook.bind(target, hookOptions),
+                genericAfterHook && genericAfterHook.bind(target, hookOptions)
+              );
+
+              if (value !== undefined) {
+                return value;
+              }
+            }
+
+            return returnValue;
           },
         } : {
           apply(func, thisArg, args) {
-            const before = callBefore(hooks, propName, {
-              target,
-              thisArg,
-              prop,
-              func,
-              args,
-              callback: func.bind(thisArg, ...args),
-            });
+            if ( genericBeforeHook || beforeHook ) {
+              const hookOptions = {
+                target,
+                thisArg,
+                prop,
+                func,
+                args,
+                callback: func.bind(thisArg, ...args),
+              };
 
-            // Allow short circuiting.
-            if (before !== undefined) {
-              return before;
+              const value = getFirstValue(
+                genericBeforeHook && genericBeforeHook.bind(target, hookOptions),
+                beforeHook && beforeHook.bind(target, hookOptions)
+              );
+
+              // Allow short circuiting.
+              if (value !== undefined) {
+                return value;
+              }
             }
 
             const returnValue = func.apply(thisArg, args);
 
-            const after = callAfter(hooks, propName, {
-              target,
-              thisArg,
-              prop,
-              args,
-              returnValue,
-            });
+            if ( genericAfterHook || afterHook ) {
+              const hookOptions = {
+                target,
+                thisArg,
+                prop,
+                args,
+                returnValue,
+              };
 
-            // Allow modifying the return value
-            return after !== undefined ? after : returnValue;
+              const value = getFirstValue(
+                afterHook && afterHook.bind(target, hookOptions),
+                genericAfterHook && genericAfterHook.bind(target, hookOptions)
+              );
+
+              if (value !== undefined) {
+                return value;
+              }
+            }
+
+            return returnValue;
           },
         };
 
         newProp = new Proxy(prop, functionHandler);
       }
 
-      return newProp ? this.cache.set(propName, newProp).get(propName) : prop;
+      if ( ! newProp ) {
+        throw new Error(`${propName} is not a function or object that can have before/after hooks. Please use "${propName}()" instead.`);
+      }
+
+      return this.cache.set(propName, newProp).get(propName);
     },
   };
 

@@ -1,3 +1,9 @@
+import {
+  PROPERTY,
+  BEFORE_PROPERTY,
+  AFTER_PROPERTY,
+} from './symbols';
+
 export function ucfirst(text) {
   const w = String(text);
 
@@ -50,10 +56,6 @@ export function toPascalCase(text, customWords) {
   return words.join('');
 }
 
-export function toCamelCase(text) {
-  return lcfirst( toPascalCase(text) );
-}
-
 export function isObject(arg) {
   return arg !== null && typeof arg === 'object';
 }
@@ -74,35 +76,51 @@ export function supportsCallback(obj, propName) {
   );
 }
 
-export function callCustom(obj, prefix, prop, ...args) {
-  const prefixCallback = toCamelCase(prefix);
-  const customCallback = prefixCallback + toPascalCase(prop);
+export function getFirstValue(...callbacks) {
+  for (const cb of callbacks) {
+    if ( typeof cb !== 'function' ) {
+      continue;
+    }
 
-  if (supportsCallback(obj, customCallback)) {
-    return obj[ customCallback ](...args);
+    const value = cb();
+
+    if (value !== undefined) {
+      return value;
+    }
   }
 
-  if (supportsCallback(obj, prefixCallback)) {
-    return obj[ prefixCallback ](...args);
+  return undefined;
+}
+
+export async function getFirstValueAsync(...callbacks) {
+  for (const cb of callbacks) {
+    if ( typeof cb !== 'function' ) {
+      continue;
+    }
+
+    const value = await cb();
+
+    if (value !== undefined) {
+      return value;
+    }
   }
+
+  return undefined;
 }
 
-export function callBefore(obj, prop, ...args) {
-  return callCustom(obj, 'before', prop, ...args);
+export function getHook( hooks, hookName ) {
+  return supportsCallback( hooks, hookName ) ? hooks[ hookName ] : false;
 }
 
-export function callAfter(obj, prop, ...args) {
-  return callCustom(obj, 'after', prop, ...args);
-}
+export function getHooks( hooks, propName ) {
+  const pascalPropName = toPascalCase( propName );
 
-export function getHookNames(propName) {
-  const hook = toPascalCase( propName );
-
-  return [
-    lcfirst(hook),
-    `before${hook}`,
-    `after${hook}`,
-    'before',
-    'after',
-  ];
+  return {
+    genericPropHook: getHook( hooks, PROPERTY ),
+    genericBeforeHook: getHook( hooks, BEFORE_PROPERTY ),
+    genericAfterHook: getHook( hooks, AFTER_PROPERTY ),
+    propHook: getHook( hooks, pascalPropName ) || getHook( hooks, propName ),
+    beforeHook: getHook( hooks, `before${pascalPropName}` ),
+    afterHook: getHook( hooks, `after${pascalPropName}` ),
+  };
 }

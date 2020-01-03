@@ -3,15 +3,12 @@ import {
   isFunction,
   isAsyncFunction,
   supportsCallback,
-  callBefore,
-  callAfter,
-  callCustom,
   capitalize,
   lcfirst,
   ucfirst,
   toPascalCase,
-  toCamelCase,
-  getHookNames,
+  getFirstValue,
+  getFirstValueAsync,
 } from '../src/helpers';
 
 const arrowFunc = () => {};
@@ -20,6 +17,65 @@ function syncFunc() {}
 
 // eslint-disable-next-line no-empty-function
 async function asyncFunc() {}
+
+describe('getFirstValue()', () => {
+  it('Returns the first callback value that isn\'t undefined', () => {
+    const mock1 = jest.fn();
+    const mock2 = jest.fn();
+
+    const value = getFirstValue(
+      () => {
+        mock1();
+      },
+      () => {
+        mock2();
+
+        return true;
+      },
+    );
+
+    expect(value).toBeTruthy();
+    expect(mock1).toHaveBeenCalled();
+    expect(mock2).toHaveBeenCalled();
+  });
+
+  it('Doesn\'t call remaining functions after getting a value', () => {
+    const mock1 = jest.fn();
+    const mock2 = jest.fn();
+
+    const value = getFirstValue(
+      () => {
+        mock1();
+
+        return true;
+      },
+      () => {
+        mock2();
+      },
+    );
+
+    expect(value).toBeTruthy();
+    expect(mock1).toHaveBeenCalled();
+    expect(mock2).not.toHaveBeenCalled();
+  });
+
+  it('Skips over arguments that aren\'t functions', () => {
+    const value = getFirstValue( true, () => true );
+
+    expect(value).toBeTruthy();
+  });
+
+  it('Returns undefined when none of the callbacks return a value', () => {
+    expect(getFirstValue( () => {} )).not.toBeDefined();
+    expect(getFirstValue()).not.toBeDefined();
+  });
+});
+
+describe('getFirstValueAsync()', () => {
+  it('Works with await', async () => {
+    await expect(getFirstValueAsync( () => {}, async () => true ) ).resolves.toBeTruthy();
+  });
+});
 
 describe('isObject()', () => {
   it('Returns true when passed an object', () => {
@@ -61,111 +117,6 @@ describe('supportsCallback()', () => {
   });
 });
 
-describe('callBefore()', () => {
-  it('Calls the before method', () => {
-    const mock = jest.fn();
-
-    const hooks = {
-      before() {
-        mock();
-      },
-    };
-
-    callBefore(hooks, 'run');
-
-    expect(mock).toHaveBeenCalled();
-  });
-
-  it('Calls custom before method', () => {
-    const mock1 = jest.fn();
-    const mock2 = jest.fn();
-
-    const hooks = {
-      before() {
-        mock1();
-      },
-      beforeRun() {
-        mock2();
-      },
-    };
-
-    callBefore(hooks, 'run');
-
-    expect(mock1).not.toHaveBeenCalled();
-    expect(mock2).toHaveBeenCalled();
-  });
-});
-
-describe('callAfter()', () => {
-  it('Calls the after method', () => {
-    const mock = jest.fn();
-
-    const hooks = {
-      after() {
-        mock();
-      },
-    };
-
-    callAfter(hooks, 'run');
-
-    expect(mock).toHaveBeenCalled();
-  });
-
-  it('Calls custom after method', () => {
-    const mock1 = jest.fn();
-    const mock2 = jest.fn();
-
-    const hooks = {
-      after() {
-        mock1();
-      },
-      afterRun() {
-        mock2();
-      },
-    };
-
-    callAfter(hooks, 'run');
-
-    expect(mock1).not.toHaveBeenCalled();
-    expect(mock2).toHaveBeenCalled();
-  });
-});
-
-describe('callCustom()', () => {
-  it('Calls the custom prefix method', () => {
-    const mock = jest.fn();
-
-    const hooks = {
-      test() {
-        mock();
-      },
-    };
-
-    callCustom(hooks, 'test', 'run');
-
-    expect(mock).toHaveBeenCalled();
-  });
-
-  it('Calls the custom method', () => {
-    const mock1 = jest.fn();
-    const mock2 = jest.fn();
-
-    const hooks = {
-      test() {
-        mock1();
-      },
-      testRun() {
-        mock2();
-      },
-    };
-
-    callCustom(hooks, 'test', 'run');
-
-    expect(mock1).not.toHaveBeenCalled();
-    expect(mock2).toHaveBeenCalled();
-  });
-});
-
 describe('capitalize', () => {
   it('Capitalizes a word', () => {
     expect(capitalize('TEST')).toBe('Test');
@@ -191,6 +142,10 @@ describe('ucfirst', () => {
 });
 
 describe('toPascalCase', () => {
+  it('Removes non alphanumeric', () => {
+    expect(toPascalCase('!@#$%^&*()')).toBe('');
+  });
+
   it('Handles one lowercase word', () => {
     expect(toPascalCase('a')).toBe('A');
     expect(toPascalCase('word')).toBe('Word');
@@ -246,35 +201,5 @@ describe('toPascalCase', () => {
     for ( const [ input, output ] of expectations ) {
       expect(toPascalCase(input)).toBe(output);
     }
-  });
-});
-
-describe('toCamelCase', () => {
-  it('Handles snake case', () => {
-    expect(toCamelCase('do_something_cool')).toBe('doSomethingCool');
-  });
-
-  it('Handles pascal case', () => {
-    expect(toCamelCase('DoSomethingCool')).toBe('doSomethingCool');
-  });
-
-  it('Handles complex sentences', () => {
-    expect(toCamelCase('Hello world! How are you today?')).toBe(
-      'helloWorldHowAreYouToday'
-    );
-  });
-
-  it('Handles numbers', () => {
-    expect(toCamelCase('Abc123def')).toBe('abc123Def');
-  });
-
-  it('Handles symbols', () => {
-    expect(toCamelCase(Symbol('test'))).toBe('symbolTest');
-  });
-});
-
-describe('getHookNames', () => {
-  it('Returns an array', () => {
-    expect(Array.isArray(getHookNames('run'))).toBeTruthy();
   });
 });
