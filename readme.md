@@ -2,12 +2,12 @@
 
 [![Build Status](https://travis-ci.org/webdeveric/object-hooks.svg?branch=master)](https://travis-ci.org/webdeveric/object-hooks)
 
-This function allows you to hook into method calls so you can shortcircuit it, alter the return value, or do something else.
+This function allows you to hook into method calls so you can short circuit it, alter the return value, or do something else.
 
 ## Usage
 
 ```js
-import objectHooks from '@webdeveric/object-hooks';
+import { objectHooks, PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY } from '@webdeveric/object-hooks';
 
 const person = {
   name: 'Eric',
@@ -27,27 +27,36 @@ const person = {
 };
 
 const hooked = objectHooks(person, {
-  name(prop) {
+  // This is a specific hook for the name property
+  name( prop ) {
     console.log('Getting name');
 
     return prop;
-  },
-  job: {
-    title( prop ) {
-      return `Software ${prop}`;
-    },
-  },
-  before() {
-    console.log('This is called before all methods.');
-  },
-  after() {
-    console.log('This is called after all methods.');
   },
   beforeGetName() {
     return 'Test Testerson';
   },
   afterGetAge({ returnValue }) {
     return returnValue - 10;
+  },
+  // You can hook into nested objects.
+  job: {
+    title( prop ) {
+      return `Software ${prop}`;
+    },
+  },
+  // The following Symbol based hooks are generic and will not be used if a specific hook is defined, such as the name() hook above.
+  // This is a generic hook for all properties
+  [ PROPERTY ](/* prop, propName, cache */) {
+    // This is called for every property access, unless there is a specific hook defined.
+  },
+  // If the property is a function, this will be called before.
+  [ BEFORE_PROPERTY ](/* { target, thisArg, prop, func, args, callback } */) {
+    // You can return new value here
+  },
+  // If the property is a function, this will be called after.
+  [ AFTER_PROPERTY ](/* { target, thisArg, prop, args, returnValue } */) {
+    // You can modify the return value here
   },
 });
 
