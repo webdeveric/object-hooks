@@ -9,7 +9,7 @@ import { terser } from 'rollup-plugin-terser';
 const isProd = process.env.NODE_ENV === 'production';
 
 const makeOutput = format => ({
-  name: 'objectHooks',
+  name: 'ObjectHooks',
   file: `dist/objectHooks.${format}.js`,
   format,
   sourcemap: ! isProd,
@@ -18,12 +18,8 @@ const makeOutput = format => ({
 export default {
   input: 'src/objectHooks.js',
   output: [
-    // 'amd',
     'cjs',
     'esm',
-    // 'iife',
-    // 'umd',
-    // 'system',
   ].map(makeOutput),
   plugins: [
     del({
