@@ -1,11 +1,26 @@
 {
   "name": "@webdeveric/object-hooks",
-  "description": "",
+  "description": "Hook into an object so you can alter property values or do something before/after a method call",
   "version": "0.1.0",
-  "private": true,
   "publishConfig": {
     "access": "public"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webdeveric/object-hooks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/webdeveric/object-hooks/issues"
+  },
+  "homepage": "https://github.com/webdeveric/object-hooks/#readme",
+  "keywords": [
+    "ObjectHooks",
+    "object-hooks",
+    "object",
+    "hook",
+    "Proxy"
+  ],
   "main": "dist/objectHooks.cjs.js",
   "module": "dist/objectHooks.esm.js",
   "files": [
@@ -24,7 +39,6 @@
     "name": "Eric King",
     "url": "http://webdeveric.com/"
   },
-  "license": "ISC",
   "dependencies": {},
   "devDependencies": {
     "@babel/core": "^7.7.7",

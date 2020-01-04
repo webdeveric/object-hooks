@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/webdeveric/object-hooks.svg?branch=master)](https://travis-ci.org/webdeveric/object-hooks)
 
-This function allows you to hook into method calls so you can short circuit it, alter the return value, or do something else.
+This function allows you to hook into an object so you can alter property values or do something before/after a method call.
 
 ## Usage
 
