@@ -123,8 +123,8 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
               };
 
               const value = getFirstValue(
-                genericBeforeHook && genericBeforeHook.bind(target, hookOptions),
-                beforeHook && beforeHook.bind(target, hookOptions)
+                beforeHook && beforeHook.bind(target, hookOptions),
+                genericBeforeHook && genericBeforeHook.bind(target, hookOptions)
               );
 
               // Allow short circuiting.

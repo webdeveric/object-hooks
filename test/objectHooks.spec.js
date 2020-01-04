@@ -1,5 +1,5 @@
 import {
-  objectHooks, PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY, 
+  objectHooks, PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY,
 } from '../src/objectHooks';
 
 describe('objectHooks()', () => {
@@ -560,24 +560,40 @@ describe('objectHooks()', () => {
       expect(mock).toHaveBeenCalledTimes(2);
     });
 
-    describe('Advanced use cases', () => {
-      it('Async before hooks return a value', async () => {
-        const person = {
-          async getLocation() {
-            return [ 0, 0 ];
-          },
-        };
+    it('Async before hooks return a value', async () => {
+      const person = {
+        async getLocation() {
+          return [ 0, 0 ];
+        },
+      };
 
-        const demo = objectHooks(person, {
-          async beforeGetLocation() {
-            return [ 90, 90 ];
-          },
-        });
-
-        await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+      const demo = objectHooks(person, {
+        async beforeGetLocation() {
+          return [ 90, 90 ];
+        },
       });
 
-      it('Async before hooks don\'t return a value', async () => {
+      await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+    });
+
+    it('Async after hooks return a value', async () => {
+      const person = {
+        async getLocation() {
+          return [ 0, 0 ];
+        },
+      };
+
+      const demo = objectHooks(person, {
+        async afterGetLocation() {
+          return [ 90, 90 ];
+        },
+      });
+
+      await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+    });
+
+    describe('Mixing generic and specific hooks', () => {
+      it('Async before hooks without a return a value do not alter the return value', async () => {
         const person = {
           async getLocation() {
             return [ 0, 0 ];
@@ -594,7 +610,7 @@ describe('objectHooks()', () => {
         await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 0, 0 ]));
       });
 
-      it('Async after hooks return a value', async () => {
+      it('One of the async after hooks returns a value', async () => {
         const person = {
           async getLocation() {
             return [ 0, 0 ];
@@ -612,20 +628,44 @@ describe('objectHooks()', () => {
         await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
       });
 
-      it('Async after hooks don\'t return a value', async () => {
-        const person = {
-          async getLocation() {
-            return [ 0, 0 ];
-          },
-        };
+      describe('Specific hooks take precedence over generic hooks', () => {
+        it('Sync hooks', () => {
+          const person = {
+            getName() {
+              return 'Eric';
+            },
+          };
 
-        const demo = objectHooks(person, {
-          async afterGetLocation() {
-            return [ 90, 90 ];
-          },
+          const demo = objectHooks(person, {
+            [ BEFORE_PROPERTY ]() {
+              return 'wrong';
+            },
+            beforeGetName() {
+              return 'correct';
+            },
+          });
+
+          expect(demo.getName()).toBe('correct');
         });
 
-        await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+        it('Async hooks', async () => {
+          const person = {
+            async getLocation() {
+              return [ 0, 0 ];
+            },
+          };
+
+          const demo = objectHooks(person, {
+            async [ BEFORE_PROPERTY ]() {
+              return 'wrong';
+            },
+            async beforeGetLocation() {
+              return [ 90, 90 ];
+            },
+          });
+
+          await expect(demo.getLocation()).resolves.toEqual(expect.arrayContaining([ 90, 90 ]));
+        });
       });
     });
   });
