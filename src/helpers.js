@@ -4,20 +4,56 @@ import {
   AFTER_PROPERTY,
 } from './symbols';
 
-export function ucfirst(text) {
-  const w = String(text);
-
-  return w.substr(0, 1).toUpperCase() + w.substr(1);
+export function isObject(arg) {
+  return arg !== null && typeof arg === 'object';
 }
 
-export function lcfirst(text) {
-  const w = String(text);
-
-  return w.substr(0, 1).toLowerCase() + w.substr(1);
+export function isFunction(arg) {
+  return typeof arg === 'function';
 }
 
-export function capitalize(text) {
-  return ucfirst( String(text).toLowerCase() );
+export function isAsyncFunction(arg) {
+  return typeof arg === 'function' && arg.constructor.name === 'AsyncFunction';
+}
+
+export function hasOwnCallback(obj, propName) {
+  return (
+    isObject(obj) &&
+    Object.prototype.hasOwnProperty.call(obj, propName) &&
+    isFunction(obj[ propName ])
+  );
+}
+
+export function validCache( cache ) {
+  return [ 'get', 'set', 'has' ].every( prop => isFunction( cache[ prop ] ) );
+}
+
+export function getFirstValue(...callbacks) {
+  for (const cb of callbacks) {
+    if ( typeof cb !== 'function' ) {
+      continue;
+    }
+
+    const value = cb();
+
+    if (value !== undefined) {
+      return value;
+    }
+  }
+}
+
+export async function getFirstValueAsync(...callbacks) {
+  for (const cb of callbacks) {
+    if ( typeof cb !== 'function' ) {
+      continue;
+    }
+
+    const value = await cb();
+
+    if (value !== undefined) {
+      return value;
+    }
+  }
 }
 
 export function toPascalCase(text, customWords) {
@@ -27,9 +63,10 @@ export function toPascalCase(text, customWords) {
     return '';
   }
 
-  words = words.map(ucfirst);
+  // Uppercase the first letter of each word
+  words = words.map( w => w.substr(0, 1).toUpperCase() + w.substr(1) );
 
-  if (customWords && typeof customWords === 'object') {
+  if ( isObject( customWords ) ) {
     const replacements = Object.entries(customWords).map(([ key, value ]) => [
       key.toLowerCase(),
       value,
@@ -56,60 +93,8 @@ export function toPascalCase(text, customWords) {
   return words.join('');
 }
 
-export function isObject(arg) {
-  return arg !== null && typeof arg === 'object';
-}
-
-export function isFunction(arg) {
-  return typeof arg === 'function';
-}
-
-export function isAsyncFunction(arg) {
-  return typeof arg === 'function' && arg.constructor.name === 'AsyncFunction';
-}
-
-export function supportsCallback(obj, propName) {
-  return (
-    isObject(obj) &&
-    Object.prototype.hasOwnProperty.call(obj, propName) &&
-    isFunction(obj[ propName ])
-  );
-}
-
-export function getFirstValue(...callbacks) {
-  for (const cb of callbacks) {
-    if ( typeof cb !== 'function' ) {
-      continue;
-    }
-
-    const value = cb();
-
-    if (value !== undefined) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
-export async function getFirstValueAsync(...callbacks) {
-  for (const cb of callbacks) {
-    if ( typeof cb !== 'function' ) {
-      continue;
-    }
-
-    const value = await cb();
-
-    if (value !== undefined) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
 export function getHook( hooks, hookName ) {
-  return supportsCallback( hooks, hookName ) ? hooks[ hookName ] : false;
+  return hasOwnCallback( hooks, hookName ) ? hooks[ hookName ] : false;
 }
 
 export function getHooks( hooks, propName ) {

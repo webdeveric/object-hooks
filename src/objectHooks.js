@@ -5,11 +5,12 @@ import {
   getHooks,
   getFirstValue,
   getFirstValueAsync,
+  validCache,
 } from './helpers';
 
 export * from './symbols';
 
-export function objectHooks(obj, hooks = {}, cache = new Map())
+export function objectHooks(obj, hooks, cache = new Map())
 {
   if ( ! isObject( obj ) ) {
     throw new Error('objectHooks obj must be an object');
@@ -17,6 +18,10 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
 
   if ( ! isObject( hooks ) ) {
     throw new Error('objectHooks hooks must be an object');
+  }
+
+  if ( ! validCache( cache ) ) {
+    throw new Error('objectHooks cache must be an object');
   }
 
   const handler = {
@@ -50,11 +55,12 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
         }
       }
 
-      const shouldHook = !!( genericBeforeHook || genericAfterHook || beforeHook || afterHook );
+      const shouldHook = isFunction(prop) && !!( genericBeforeHook || genericAfterHook || beforeHook || afterHook );
       const nestedObject = isObject(prop) && isObject(hooks[ propName ]);
 
-      if ( ! shouldHook && ! nestedObject ) {
-        return prop;
+      // Thrown an error if the user is trying to use a hook on a prop that is not a function.
+      if ( ! isFunction(prop) && !!( beforeHook || afterHook ) ) {
+        throw new Error(`${propName} is not a function that can have before/after hooks. Please use "${propName}()" if you want to modify this property.`);
       }
 
       let newProp;
@@ -63,7 +69,7 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
         newProp = objectHooks(prop, hooks[ propName ]);
       }
 
-      if ( isFunction(prop) ) {
+      if ( shouldHook ) {
         const functionHandler = isAsyncFunction(prop) ? {
           async apply(func, thisArg, args) {
             if ( genericBeforeHook || beforeHook ) {
@@ -161,11 +167,7 @@ export function objectHooks(obj, hooks = {}, cache = new Map())
         newProp = new Proxy(prop, functionHandler);
       }
 
-      if ( ! newProp ) {
-        throw new Error(`${propName} is not a function or object that can have before/after hooks. Please use "${propName}()" instead.`);
-      }
-
-      return this.cache.set(propName, newProp).get(propName);
+      return newProp ? this.cache.set(propName, newProp).get(propName) : prop;
     },
   };
 

@@ -2,14 +2,18 @@ import {
   isObject,
   isFunction,
   isAsyncFunction,
-  supportsCallback,
-  capitalize,
-  lcfirst,
-  ucfirst,
-  toPascalCase,
+  hasOwnCallback,
+  validCache,
   getFirstValue,
   getFirstValueAsync,
+  toPascalCase,
+  getHook,
+  getHooks,
 } from '../src/helpers';
+
+import {
+  PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY,
+} from '../src/symbols';
 
 const arrowFunc = () => {};
 
@@ -17,6 +21,58 @@ function syncFunc() {}
 
 // eslint-disable-next-line no-empty-function
 async function asyncFunc() {}
+
+describe('isObject()', () => {
+  it('Returns true when passed an object', () => {
+    expect(isObject({})).toBeTruthy();
+    expect(isObject(Object.create(null))).toBeTruthy();
+    expect(isObject(null)).toBeFalsy();
+  });
+});
+
+describe('isFunction()', () => {
+  it('Returns true when passed a function', () => {
+    expect(isFunction(arrowFunc)).toBeTruthy();
+    expect(isFunction(syncFunc)).toBeTruthy();
+    expect(isFunction(asyncFunc)).toBeTruthy();
+    expect(isFunction(false)).toBeFalsy();
+  });
+});
+
+describe('isAsyncFunction()', () => {
+  it('Returns true when passed an async function', () => {
+    expect(isAsyncFunction(arrowFunc)).toBeFalsy();
+    expect(isAsyncFunction(syncFunc)).toBeFalsy();
+    expect(isAsyncFunction(asyncFunc)).toBeTruthy();
+    expect(isAsyncFunction(false)).toBeFalsy();
+  });
+});
+
+describe('hasOwnCallback()', () => {
+  it('Identifies if a callback exists', () => {
+    const obj = {
+      run() {
+        return true;
+      },
+    };
+
+    expect(hasOwnCallback(obj, 'run')).toBeTruthy();
+    expect(hasOwnCallback(obj, 'fake')).toBeFalsy();
+    expect(hasOwnCallback(null, 'fake')).toBeFalsy();
+  });
+});
+
+describe('validCache()', () => {
+  it('checks for the minimum required methods', () => {
+    expect(validCache(new Map())).toBeTruthy();
+    expect(validCache(new WeakMap())).toBeTruthy();
+    expect(validCache({
+      get() {},
+      set() {},
+      has() {},
+    })).toBeTruthy();
+  });
+});
 
 describe('getFirstValue()', () => {
   it('Returns the first callback value that isn\'t undefined', () => {
@@ -77,71 +133,7 @@ describe('getFirstValueAsync()', () => {
   });
 });
 
-describe('isObject()', () => {
-  it('Returns true when passed an object', () => {
-    expect(isObject({})).toBeTruthy();
-    expect(isObject(Object.create(null))).toBeTruthy();
-    expect(isObject(null)).toBeFalsy();
-  });
-});
-
-describe('isFunction()', () => {
-  it('Returns true when passed a function', () => {
-    expect(isFunction(arrowFunc)).toBeTruthy();
-    expect(isFunction(syncFunc)).toBeTruthy();
-    expect(isFunction(asyncFunc)).toBeTruthy();
-    expect(isFunction(false)).toBeFalsy();
-  });
-});
-
-describe('isAsyncFunction()', () => {
-  it('Returns true when passed an async function', () => {
-    expect(isAsyncFunction(arrowFunc)).toBeFalsy();
-    expect(isAsyncFunction(syncFunc)).toBeFalsy();
-    expect(isAsyncFunction(asyncFunc)).toBeTruthy();
-    expect(isAsyncFunction(false)).toBeFalsy();
-  });
-});
-
-describe('supportsCallback()', () => {
-  it('Identifies if a callback exists', () => {
-    const obj = {
-      run() {
-        return true;
-      },
-    };
-
-    expect(supportsCallback(obj, 'run')).toBeTruthy();
-    expect(supportsCallback(obj, 'fake')).toBeFalsy();
-    expect(supportsCallback(null, 'fake')).toBeFalsy();
-  });
-});
-
-describe('capitalize', () => {
-  it('Capitalizes a word', () => {
-    expect(capitalize('TEST')).toBe('Test');
-    expect(capitalize('Test')).toBe('Test');
-    expect(capitalize('test')).toBe('Test');
-  });
-});
-
-describe('lcfirst', () => {
-  it('Make a string\'s first character lowercase', () => {
-    expect(lcfirst('TEST')).toBe('tEST');
-    expect(lcfirst('Test')).toBe('test');
-    expect(lcfirst('test')).toBe('test');
-  });
-});
-
-describe('ucfirst', () => {
-  it('Make a string\'s first character uppercase', () => {
-    expect(ucfirst('TEST')).toBe('TEST');
-    expect(ucfirst('TeSt')).toBe('TeSt');
-    expect(ucfirst('tesT')).toBe('TesT');
-  });
-});
-
-describe('toPascalCase', () => {
+describe('toPascalCase()', () => {
   it('Removes non alphanumeric', () => {
     expect(toPascalCase('!@#$%^&*()')).toBe('');
   });
@@ -201,5 +193,62 @@ describe('toPascalCase', () => {
     for ( const [ input, output ] of expectations ) {
       expect(toPascalCase(input)).toBe(output);
     }
+  });
+});
+
+describe('getHook()', () => {
+  it('Gets the hook from the object', () => {
+    const hooks = {
+      run() {},
+    };
+
+    expect(getHook(hooks, 'run')).toBe(hooks.run);
+    expect(getHook(hooks, 'fake')).toBeFalsy();
+  });
+});
+
+describe('getHooks()', () => {
+  it('Gets the hook from the object', () => {
+    const hooks = {
+      beforeRun() {},
+      run() {},
+      afterRun() {},
+      [ PROPERTY ]() {},
+      [ BEFORE_PROPERTY ]() {},
+      [ AFTER_PROPERTY ]() {},
+    };
+
+    expect(getHooks(hooks, 'run')).toMatchObject(
+      expect.objectContaining({
+        genericPropHook: expect.any(Function),
+        genericBeforeHook: expect.any(Function),
+        genericAfterHook: expect.any(Function),
+        propHook: expect.any(Function),
+        beforeHook: expect.any(Function),
+        afterHook: expect.any(Function),
+      })
+    );
+
+    expect(getHooks(hooks, 'getName')).toMatchObject(
+      expect.objectContaining({
+        genericPropHook: expect.any(Function),
+        genericBeforeHook: expect.any(Function),
+        genericAfterHook: expect.any(Function),
+        propHook: false,
+        beforeHook: false,
+        afterHook: false,
+      })
+    );
+
+    expect(getHooks({}, 'run')).toMatchObject(
+      expect.objectContaining({
+        genericPropHook: false,
+        genericBeforeHook: false,
+        genericAfterHook: false,
+        propHook: false,
+        beforeHook: false,
+        afterHook: false,
+      })
+    );
   });
 });

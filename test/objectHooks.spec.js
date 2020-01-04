@@ -3,6 +3,56 @@ import {
 } from '../src/objectHooks';
 
 describe('objectHooks()', () => {
+  describe('arguments', () => {
+    it('obj must be an object', () => {
+      expect(() => {
+        objectHooks({}, {});
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks(Object.create(null), {});
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks(null, {});
+      }).toThrow();
+    });
+
+    it('hooks must be an object', () => {
+      expect(() => {
+        objectHooks({}, {});
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks({}, Object.create(null));
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks();
+      }).toThrow();
+
+      expect(() => {
+        objectHooks({});
+      }).toThrow();
+
+      expect(() => {
+        objectHooks({}, null);
+      }).toThrow();
+    });
+
+    it('cache must be a Map', () => {
+      const cache = new Map();
+
+      expect(() => {
+        objectHooks({}, {}, cache);
+      }).not.toThrow();
+
+      expect(() => {
+        objectHooks({}, {}, {});
+      }).toThrow();
+    });
+  });
+
   describe('Handles properties that are not functions', () => {
     it('Returns the property', () => {
       const zero = Symbol('Zero');
@@ -13,7 +63,7 @@ describe('objectHooks()', () => {
         name: 'Eric',
       };
 
-      const demo = objectHooks(obj);
+      const demo = objectHooks(obj, {});
 
       expect(demo.name).toBe('Eric');
       expect(demo[ zero ]).toBe('Zero');
@@ -64,37 +114,13 @@ describe('objectHooks()', () => {
     });
   });
 
-  describe('arguments', () => {
-    it('obj must be an object', () => {
-      expect(() => {
-        objectHooks({});
-        objectHooks(Object.create(null));
-      }).not.toThrow();
-
-      expect(() => {
-        objectHooks(null);
-      }).toThrow();
-    });
-
-    it('hooks must be an object', () => {
-      expect(() => {
-        objectHooks({}, {});
-        objectHooks({}, undefined);
-      }).not.toThrow();
-
-      expect(() => {
-        objectHooks({}, null);
-      }).toThrow();
-    });
-  });
-
   describe('hooks', () => {
     it('Returns the prop if no hooks defined', () => {
       const person = {
         name: 'Eric',
       };
 
-      const demo = objectHooks(person);
+      const demo = objectHooks(person, {});
 
       expect(demo.name).toStrictEqual(person.name);
       expect(demo.name === person.name).toBeTruthy();
@@ -514,7 +540,7 @@ describe('objectHooks()', () => {
       });
     });
 
-    it('Callbacks have correct \'this\'', () => {
+    it('Callbacks have correct "this"', () => {
       const person = {
         name: 'Eric',
       };
