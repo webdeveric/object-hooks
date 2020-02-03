@@ -57,14 +57,14 @@ export async function getFirstValueAsync(...callbacks) {
 }
 
 export function toPascalCase(text, customWords) {
-  let words = String(text).match( /[A-Z][a-z]+|\d+|[a-z]+/g );
+  let words = String(text).match( /[A-Z][a-z']+|\d+|[a-z']+/g );
 
   if ( ! words ) {
     return '';
   }
 
-  // Uppercase the first letter of each word
-  words = words.map( w => w.substr(0, 1).toUpperCase() + w.substr(1) );
+  // Uppercase the first letter of each word and replace apostrophe.
+  words = words.map( w =>  w.substr(0, 1).toUpperCase() + w.substr(1).replace('\'', '') );
 
   if ( isObject( customWords ) ) {
     const replacements = Object.entries(customWords).map(([ key, value ]) => [

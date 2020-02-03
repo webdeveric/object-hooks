@@ -161,6 +161,10 @@ describe('toPascalCase()', () => {
     expect(toPascalCase('abc123def')).toBe('Abc123Def');
   });
 
+  it('Handles apostrophe', () => {
+    expect(toPascalCase('Didn\'t can\'t isn\'t would\'ve')).toBe('DidntCantIsntWouldve');
+  });
+
   it('Supports custom word mapping', () => {
     const wordMap = {
       io: 'IO',
