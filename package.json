@@ -49,6 +49,7 @@
     "eslint-config-webdeveric": "^0.4.0",
     "eslint-plugin-jest": "^23.8.2",
     "jest": "^25.1.0",
+    "minimist": ">=1.2.2",
     "rollup": "^2.0.6",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-delete": "^1.2.0",
