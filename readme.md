@@ -1,6 +1,6 @@
 # Object Hooks
 
-[![Build Status](https://travis-ci.org/webdeveric/object-hooks.svg?branch=master)](https://travis-ci.org/webdeveric/object-hooks)
+[![Build Status](https://github.com/webdeveric/object-hooks/workflows/Node.js%20CI/badge.svg)](https://github.com/webdeveric/object-hooks/actions)
 
 This function allows you to hook into an object so you can alter property values or do something before/after a method call.
 
