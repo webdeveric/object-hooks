@@ -1,5 +1,5 @@
 import {
-  objectHooks, PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY,
+  AFTER_PROPERTY, BEFORE_PROPERTY, objectHooks, PROPERTY,
 } from '../src/objectHooks';
 
 describe('objectHooks()', () => {
@@ -88,7 +88,7 @@ describe('objectHooks()', () => {
       const person = objectHooks(
         {
           name: 'Eric',
-          [Symbol.toPrimitive](hint) {
+          [ Symbol.toPrimitive ](hint) {
             if ( hint === 'string') {
               return this.name;
             }
@@ -137,7 +137,7 @@ describe('objectHooks()', () => {
           };
 
           const demo = objectHooks(person, {
-            [ PROPERTY ](/*prop, propName, cache */) {
+            [ PROPERTY ](/* prop, propName, cache */) {
               mock();
             },
           });
@@ -186,7 +186,7 @@ describe('objectHooks()', () => {
               [ BEFORE_PROPERTY ]() {
                 mock();
               },
-            }
+            },
           );
 
           demo.run();
@@ -207,7 +207,7 @@ describe('objectHooks()', () => {
               [ BEFORE_PROPERTY ]() {
                 return shortCircuit;
               },
-            }
+            },
           );
 
           expect(demo.getName()).toBe(shortCircuit);
@@ -237,7 +237,7 @@ describe('objectHooks()', () => {
                 expect(args).toStrictEqual([ 1, 2, 3 ]);
                 expect(callback()).toStrictEqual([ 1, 2, 3 ]);
               },
-            }
+            },
           );
 
           demo.run(1, 2, 3);
@@ -256,7 +256,7 @@ describe('objectHooks()', () => {
               [ AFTER_PROPERTY ]() {
                 mock();
               },
-            }
+            },
           );
 
           demo.run();
@@ -275,7 +275,7 @@ describe('objectHooks()', () => {
               [ AFTER_PROPERTY ]({ returnValue }) {
                 return returnValue + '!';
               },
-            }
+            },
           );
 
           expect(demo.getName()).toBe('Eric!');
@@ -304,7 +304,7 @@ describe('objectHooks()', () => {
                 expect(args).toStrictEqual([ 1, 2, 3 ]);
                 expect(returnValue).toStrictEqual([ 1, 2, 3 ]);
               },
-            }
+            },
           );
 
           demo.run(1, 2, 3);
@@ -333,7 +333,7 @@ describe('objectHooks()', () => {
             // Do nothing
             ageMock();
           },
-          getName(prop /*, cache */) {
+          getName(prop /* , cache */) {
             nameMock();
 
             return (...args) => {
@@ -412,7 +412,7 @@ describe('objectHooks()', () => {
             afterRun() {
               mockAfterRun();
             },
-          }
+          },
         );
 
         expect(demo.run()).toBeTruthy();
@@ -445,7 +445,7 @@ describe('objectHooks()', () => {
               expect(args).toStrictEqual([ 1, 2, 3 ]);
               expect(callback()).toStrictEqual([ 1, 2, 3 ]);
             },
-          }
+          },
         );
 
         demo.run(1, 2, 3);
@@ -474,7 +474,7 @@ describe('objectHooks()', () => {
               expect(args).toStrictEqual([ 1, 2, 3 ]);
               expect(returnValue).toStrictEqual([ 1, 2, 3 ]);
             },
-          }
+          },
         );
 
         demo.run(1, 2, 3);
@@ -491,7 +491,7 @@ describe('objectHooks()', () => {
             afterRun({ returnValue }) {
               return returnValue + 1;
             },
-          }
+          },
         );
 
         expect(demo.run()).toBe(2);
@@ -516,7 +516,7 @@ describe('objectHooks()', () => {
             async afterGetAge() {
               // Do something here.
             },
-          }
+          },
         );
 
         await expect(demo.run()).resolves.toBe(2);
@@ -531,7 +531,7 @@ describe('objectHooks()', () => {
           {
             beforeAge() {
             },
-          }
+          },
         );
 
         expect(() => {
@@ -574,7 +574,7 @@ describe('objectHooks()', () => {
           afterGetName() {
             mock();
           },
-        }
+        },
       );
 
       expect(demo.getName()).toBe('bar');
@@ -697,31 +697,6 @@ describe('objectHooks()', () => {
   });
 
   describe('Caches methods', () => {
-    it('Stores the method in the cache', () => {
-      let callCount = 0;
-
-      const obj = {
-        run() {},
-      };
-
-      const monitor = objectHooks(obj, {
-        [ PROPERTY ](prop, propName, cache) {
-          if ( callCount === 0 ) {
-            expect(cache.has(propName)).toBeFalsy();
-          } else {
-            expect(cache.has(propName)).toBeTruthy();
-          }
-        },
-        beforeRun() {
-          ++callCount;
-        },
-      });
-
-      monitor.run();
-
-      monitor.run();
-    });
-
     it('Cache can be injected', () => {
       const obj = {
         run() {},
@@ -734,7 +709,7 @@ describe('objectHooks()', () => {
         {
           beforeRun() {},
         },
-        cache
+        cache,
       );
 
       expect(cache.has('run')).toBeFalsy();

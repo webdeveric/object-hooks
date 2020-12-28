@@ -1,18 +1,18 @@
 import {
-  isObject,
-  isFunction,
-  isAsyncFunction,
-  hasOwnCallback,
-  validCache,
   getFirstValue,
   getFirstValueAsync,
-  toPascalCase,
   getHook,
   getHooks,
+  hasOwnCallback,
+  isAsyncFunction,
+  isFunction,
+  isObject,
+  toPascalCase,
+  validCache,
 } from '../src/helpers';
 
 import {
-  PROPERTY, BEFORE_PROPERTY, AFTER_PROPERTY,
+  AFTER_PROPERTY, BEFORE_PROPERTY, PROPERTY,
 } from '../src/symbols';
 
 const arrowFunc = () => {};
@@ -153,7 +153,7 @@ describe('toPascalCase()', () => {
 
   it('Handles complex sentences', () => {
     expect(toPascalCase('Hello world! How are you today?')).toBe(
-      'HelloWorldHowAreYouToday'
+      'HelloWorldHowAreYouToday',
     );
   });
 
@@ -230,7 +230,7 @@ describe('getHooks()', () => {
         propHook: expect.any(Function),
         beforeHook: expect.any(Function),
         afterHook: expect.any(Function),
-      })
+      }),
     );
 
     expect(getHooks(hooks, 'getName')).toMatchObject(
@@ -241,7 +241,7 @@ describe('getHooks()', () => {
         propHook: false,
         beforeHook: false,
         afterHook: false,
-      })
+      }),
     );
 
     expect(getHooks({}, 'run')).toMatchObject(
@@ -252,7 +252,7 @@ describe('getHooks()', () => {
         propHook: false,
         beforeHook: false,
         afterHook: false,
-      })
+      }),
     );
   });
 });

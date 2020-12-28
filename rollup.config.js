@@ -1,9 +1,9 @@
 import babel from 'rollup-plugin-babel';
-import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import filesize from 'rollup-plugin-filesize';
 import del from 'rollup-plugin-delete';
-import { eslint } from 'rollup-plugin-eslint';
+import eslint from '@rollup/plugin-eslint';
+import filesize from 'rollup-plugin-filesize';
+import resolve from '@rollup/plugin-node-resolve';
 import { terser } from 'rollup-plugin-terser';
 
 const isProd = process.env.NODE_ENV === 'production';

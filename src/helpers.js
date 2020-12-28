@@ -1,7 +1,7 @@
 import {
-  PROPERTY,
-  BEFORE_PROPERTY,
   AFTER_PROPERTY,
+  BEFORE_PROPERTY,
+  PROPERTY,
 } from './symbols';
 
 export function isObject(arg) {

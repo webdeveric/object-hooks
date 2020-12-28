@@ -1,10 +1,10 @@
 import {
-  isObject,
-  isFunction,
-  isAsyncFunction,
-  getHooks,
   getFirstValue,
   getFirstValueAsync,
+  getHooks,
+  isAsyncFunction,
+  isFunction,
+  isObject,
   validCache,
 } from './helpers';
 
@@ -47,7 +47,7 @@ export function objectHooks(obj, hooks, cache = new Map())
       if ( genericPropHook || propHook ) {
         const preemptValue = getFirstValue(
           propHook && propHook.bind(target, prop, this.cache),
-          genericPropHook && genericPropHook.bind(target, prop, propName, this.cache)
+          genericPropHook && genericPropHook.bind(target, prop, propName, this.cache),
         );
 
         if (preemptValue !== undefined) {
@@ -55,11 +55,11 @@ export function objectHooks(obj, hooks, cache = new Map())
         }
       }
 
-      const shouldHook = isFunction(prop) && !!( genericBeforeHook || genericAfterHook || beforeHook || afterHook );
+      const shouldHook = isFunction(prop) && !! ( genericBeforeHook || genericAfterHook || beforeHook || afterHook );
       const nestedObject = isObject(prop) && isObject(hooks[ propName ]);
 
       // Thrown an error if the user is trying to use a hook on a prop that is not a function.
-      if ( ! isFunction(prop) && !!( beforeHook || afterHook ) ) {
+      if ( ! isFunction(prop) && !! ( beforeHook || afterHook ) ) {
         throw new Error(`${propName} is not a function that can have before/after hooks. Please use "${propName}()" if you want to modify this property.`);
       }
 
@@ -84,7 +84,7 @@ export function objectHooks(obj, hooks, cache = new Map())
 
               const value = await getFirstValueAsync(
                 beforeHook && beforeHook.bind(target, hookOptions),
-                genericBeforeHook && genericBeforeHook.bind(target, hookOptions)
+                genericBeforeHook && genericBeforeHook.bind(target, hookOptions),
               );
 
               // Allow short circuiting.
@@ -106,7 +106,7 @@ export function objectHooks(obj, hooks, cache = new Map())
 
               const value = await getFirstValueAsync(
                 afterHook && afterHook.bind(target, hookOptions),
-                genericAfterHook && genericAfterHook.bind(target, hookOptions)
+                genericAfterHook && genericAfterHook.bind(target, hookOptions),
               );
 
               if (value !== undefined) {
@@ -130,7 +130,7 @@ export function objectHooks(obj, hooks, cache = new Map())
 
               const value = getFirstValue(
                 beforeHook && beforeHook.bind(target, hookOptions),
-                genericBeforeHook && genericBeforeHook.bind(target, hookOptions)
+                genericBeforeHook && genericBeforeHook.bind(target, hookOptions),
               );
 
               // Allow short circuiting.
@@ -152,7 +152,7 @@ export function objectHooks(obj, hooks, cache = new Map())
 
               const value = getFirstValue(
                 afterHook && afterHook.bind(target, hookOptions),
-                genericAfterHook && genericAfterHook.bind(target, hookOptions)
+                genericAfterHook && genericAfterHook.bind(target, hookOptions),
               );
 
               if (value !== undefined) {
