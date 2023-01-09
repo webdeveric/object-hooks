@@ -6,7 +6,6 @@ import {
   hasOwnCallback,
   isAsyncFunction,
   isFunction,
-  isObject,
   validCache,
 } from '../src/helpers';
 
@@ -20,14 +19,6 @@ function syncFunc() {}
 
 // eslint-disable-next-line no-empty-function
 async function asyncFunc() {}
-
-describe('isObject()', () => {
-  it('Returns true when passed an object', () => {
-    expect(isObject({})).toBeTruthy();
-    expect(isObject(Object.create(null))).toBeTruthy();
-    expect(isObject(null)).toBeFalsy();
-  });
-});
 
 describe('isFunction()', () => {
   it('Returns true when passed a function', () => {

@@ -1,0 +1,8 @@
+{
+  "version": "0.2",
+  "words": [
+    "filesize",
+    "webdeveric"
+  ],
+  "ignorePaths": ["package-lock.json", "./coverage", "./dist"]
+}

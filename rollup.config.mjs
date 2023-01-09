@@ -1,16 +1,16 @@
-import babel from 'rollup-plugin-babel';
+import babel from '@rollup/plugin-babel';
 import commonjs from '@rollup/plugin-commonjs';
 import del from 'rollup-plugin-delete';
 import eslint from '@rollup/plugin-eslint';
+import externals from 'rollup-plugin-node-externals';
 import filesize from 'rollup-plugin-filesize';
 import resolve from '@rollup/plugin-node-resolve';
-import { terser } from 'rollup-plugin-terser';
 
 const isProd = process.env.NODE_ENV === 'production';
 
-const makeOutput = format => ({
+const makeOutput = ([ format, extension ]) => ({
   name: 'ObjectHooks',
-  file: `dist/objectHooks.${format}.js`,
+  file: `dist/objectHooks.${extension}`,
   format,
   sourcemap: ! isProd,
 });
@@ -18,12 +18,15 @@ const makeOutput = format => ({
 export default {
   input: 'src/objectHooks.js',
   output: [
-    'cjs',
-    'esm',
+    [ 'cjs', 'cjs' ],
+    [ 'esm', 'mjs' ],
   ].map(makeOutput),
   plugins: [
     del({
       targets: './dist/*',
+    }),
+    externals({
+      deps: true,
     }),
     resolve({
       extensions: [ '.js' ],
@@ -36,8 +39,8 @@ export default {
     }),
     babel({
       exclude: 'node_modules/**',
+      babelHelpers: 'bundled',
     }),
-    ( isProd && terser() ),
     filesize(),
   ],
   watch: {
