@@ -1,14 +1,15 @@
+import { isObject } from '@webdeveric/utils/type-predicate';
+
 import {
   getFirstValue,
   getFirstValueAsync,
   getHooks,
   isAsyncFunction,
   isFunction,
-  isObject,
   validCache,
-} from './helpers';
+} from './helpers.js';
 
-export * from './symbols';
+export * from './symbols.js';
 
 export function objectHooks(obj, hooks, cache = new Map())
 {
